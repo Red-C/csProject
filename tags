@@ -1,0 +1,49 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+AND_COMMAND	command-internals.h	/^    AND_COMMAND,         \/\/ A && B$/;"	e	enum:command_type
+CC	Makefile	/^CC = gcc$/;"	m
+CFLAGS	Makefile	/^CFLAGS = -g -Wall -Wextra -Wno-unused -Werror$/;"	m
+DISTDIR	Makefile	/^DISTDIR = lab1-$(USER)$/;"	m
+DIST_SOURCES	Makefile	/^DIST_SOURCES = \\$/;"	m
+LAB	Makefile	/^LAB = 1$/;"	m
+OR_COMMAND	command-internals.h	/^    OR_COMMAND,          \/\/ A || B$/;"	e	enum:command_type
+PIPE_COMMAND	command-internals.h	/^    PIPE_COMMAND,        \/\/ A | B$/;"	e	enum:command_type
+SEQUENCE_COMMAND	command-internals.h	/^    SEQUENCE_COMMAND,    \/\/ A ; B$/;"	e	enum:command_type
+SIMPLE_COMMAND	command-internals.h	/^    SIMPLE_COMMAND,      \/\/ a simple command$/;"	e	enum:command_type
+SUBSHELL_COMMAND	command-internals.h	/^    SUBSHELL_COMMAND,    \/\/ ( A )$/;"	e	enum:command_type
+TESTS	Makefile	/^TESTS = $(wildcard test*.sh)$/;"	m
+TEST_BASES	Makefile	/^TEST_BASES = $(subst .sh,,$(TESTS))$/;"	m
+TIMETRASH_OBJECTS	Makefile	/^TIMETRASH_OBJECTS = $(subst .c,.o,$(TIMETRASH_SOURCES))$/;"	m
+TIMETRASH_SOURCES	Makefile	/^TIMETRASH_SOURCES = \\$/;"	m
+check_nonnull	alloc.c	/^check_nonnull (void *p)$/;"	f	file:
+checked_grow_alloc	alloc.c	/^checked_grow_alloc (void *ptr, size_t *size)$/;"	f
+checked_malloc	alloc.c	/^checked_malloc (size_t size)$/;"	f
+checked_realloc	alloc.c	/^checked_realloc (void *ptr, size_t size)$/;"	f
+command	command-internals.h	/^    struct command *command[2];$/;"	m	union:command::__anon1	typeref:struct:command::__anon1::command
+command	command-internals.h	/^struct command$/;"	s
+command_indented_print	print-command.c	/^command_indented_print (int indent, command_t c)$/;"	f	file:
+command_status	execute-command.c	/^command_status (command_t c)$/;"	f
+command_stream_t	command.h	/^typedef struct command_stream *command_stream_t;$/;"	t	typeref:struct:command_stream
+command_t	command.h	/^typedef struct command *command_t;$/;"	t	typeref:struct:command
+command_type	command-internals.h	/^enum command_type$/;"	g
+execute_command	execute-command.c	/^execute_command (command_t c, int time_travel)$/;"	f
+get_next_byte	main.c	/^get_next_byte (void *stream)$/;"	f	file:
+input	command-internals.h	/^  char *input;$/;"	m	struct:command
+main	main.c	/^main (int argc, char **argv)$/;"	f
+make_command_stream	read-command.c	/^make_command_stream (int (*get_next_byte) (void *),$/;"	f
+memory_exhausted	alloc.c	/^memory_exhausted (int errnum)$/;"	f	file:
+output	command-internals.h	/^  char *output;$/;"	m	struct:command
+print_command	print-command.c	/^print_command (command_t c)$/;"	f
+program_name	main.c	/^static char const *program_name;$/;"	v	file:
+read_command_stream	read-command.c	/^read_command_stream (command_stream_t s)$/;"	f
+script_name	main.c	/^static char const *script_name;$/;"	v	file:
+status	command-internals.h	/^  int status;$/;"	m	struct:command
+subshell_command	command-internals.h	/^    struct command *subshell_command;$/;"	m	union:command::__anon1	typeref:struct:command::__anon1::command
+type	command-internals.h	/^  enum command_type type;$/;"	m	struct:command	typeref:enum:command::command_type
+u	command-internals.h	/^  } u;$/;"	m	struct:command	typeref:union:command::__anon1
+usage	main.c	/^usage (void)$/;"	f	file:
+word	command-internals.h	/^    char **word;$/;"	m	union:command::__anon1
