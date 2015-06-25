@@ -8,6 +8,55 @@
 #include <stdio.h>
 #include <string.h>
 
+
+/*********************************************************************/
+// Queue
+struct node{
+	 int value;
+	 struct node * next; 
+};
+
+
+typedef struct queue{
+	 struct node * head;
+	 struct node * tail;
+} queue;
+
+queue 
+q_empty()
+{
+	 queue q;
+	 q.head = q.tail = NULL;
+	 return q;
+}
+
+
+int empty_huh(queue q)
+{
+	 if(q.head == NULL)
+	   return 1;
+	 else
+	   return 0;
+}
+
+
+
+
+
+
+
+
+
+/*********************************************************************/
+
+
+
+
+
+
+
+
+
 /* FIXME: You may need to add #include directives, macro definitions,
    static function definitions, etc.  */
 
@@ -25,39 +74,19 @@
 
 struct command_stream {
 	
+	command_t root;
+	command_t iterator;
+
 	char* buffer;
 	size_t size;
 	size_t cap;
 };
 
+
 command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
 			 void *get_next_byte_argument)
 {
-  /* FIXME: Replace this with your implementation.  You may need to
-     add auxiliary functions and otherwise modify the source code.
-     You can also use external functions defined in the GNU C Library.  */
-	// allocate struct command_stream
-	command_stream_t p = (command_stream_t)checked_malloc(sizeof(command_stream));
-	// initialize buffer size, will realloc if needed
-	p->cap = STREAM_BUFFER_SIZE;
-	p->buffer = (char*) checked_malloc(sizeof(char)*p->cap);
-
-	while(char c = get_next_byte(get_next_byte_argument))
-	{
-			// if buffer is full, increase with uprate
-			if(p->size >= p->cap)
-			{ 
-					// p->cap *= UPRATE;    // there is a grow_alloc function, use that one instead
-					p->buffer = (char*)checked_grow_alloc(p->buffer, &p->cap);
-			}
-			
-			// read next byte and increase size
-			p->buffer[p->size++] = c;
-	}
-	printf("%s", p->buffer);
-  //error (1, 0, "command reading not yet implemented");
-  //return 0;
 	return p;
 }
 
@@ -76,6 +105,22 @@ enum token_type
   };
 typedef char* token;
 
+/**
+ * eat_whitespace 
+ * param: 
+ * 		s(char*): intput stream
+ *
+ * return:
+ * 		char*: pointer to the character after whitespace
+ * descr:
+ * 		eat all prefix whitespace
+ */
+char* eat_whitespace(char* s) {
+	char* it = s;
+	while(*it == ' ')
+		it++;
+	return it;
+}
 
 /**
  * next_token_type
@@ -159,9 +204,33 @@ malloc_cmd()
  */
 command_t 
 read_seq(command_t holder, command_stream_t s)
-{//TODO similar as reader function below, read complete
- // commands one by one
-	return 0;
+{
+	//
+	// beginning of current pipeline 
+	if( holder == NULL) 
+	{
+		// read first command, this will be the left child of node if 
+		// number of commands in pipeline is more than one
+		command_t cur = read_andor(s);
+		return read_seq(cur, s);
+	}
+	 
+	command_t cmd;
+	// end of pipeline
+	if(next_token_type(s) != SEQ)		
+		return holder;
+	// allocate memory for current pipeline command
+	else  								
+	{ 
+		pop_token(s); 
+		cmd = malloc_cmd();
+	}
+
+	// assign left and right child, left associative
+	cmd->u.command[0] = holder;
+	cmd->u.command[1] = read_andor(s);
+	return read_seq(cmd, s);
+
 }
 
 
