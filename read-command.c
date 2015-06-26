@@ -8,7 +8,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
+typedef int bool;
+#define false 0
+#define true 1
 
 /*********************************************************************/
 /** isWord**/
@@ -18,78 +20,6 @@
 	(c)=='-'||(c)=='.'||(c)=='/'||(c)==':'||(c)=='@'||(c)=='^'||(c)=='_')
 
 #define is_word(c) (isNum((c)) || isLet((c)) || isvWord((c)))
-/*********************************************************************/
-// Queue
-struct node{
-	 char* value;
-	 struct node * next; 
-};
-
-
-typedef struct queue{
-	 struct node * head;
-	 struct node * tail;
-} queue;
-
-queue 
-q_empty()
-{
-	 queue q;
-	 q.head = q.tail = NULL;
-	 return q;
-}
-
-
-int isempty(queue q)
-{
-	 if(q.head == NULL)
-	   return 1;
-	 else
-	   return 0;
-}
-
-queue enqueue(char* in, queue q)
-{
- struct node * item = (struct node *)checked_malloc(sizeof(struct node));
- item->value = in;
- item->next = NULL;
-
- if(isempty(q))
- 	q.head = q.tail = item;
- else
- {
-    q.tail->next = item;
-  	q.tail = item;
- }
- return q;
-};
-
-
-queue dequeue(queue q)
-{
-	struct node * temp;
-	if(q.head)
-	{
-		temp = q.head;
-		q.head = q.head->next;
-		free(temp);
-	}
-	if(isempty(q))
-		return q_empty();
-	return q;
-}
-
-char* next(queue q)
-{
-	 return q.head->value;
-}
-
-
-
-
-
-/*********************************************************************/
-
 
 /* FIXME: Define the type 'struct command_stream' here.  This should
    complete the incomplete type declaration in command.h.  */
@@ -114,21 +44,6 @@ struct command_stream {
 
 
 
-enum token_type 
-  {
-	WORD,  // token
-	IN,    // <
-	OUT,   // >
-    AND,   // &&
-	OR,	   // ||
-    SEQ,   // \n ;
-    PIPE,  // | 
-    SIMPLE,// one or more adjacent characters that are ASCII letters (either upper or lower case), digits, or any of: ! % + , - . / : @ ^
-    LB,  // ( 
-	RB,   // )
-	UNKNOWN
-  };
-typedef char* token;
 
 /**
  * eat_whitespace TODO
@@ -163,8 +78,7 @@ is_whitespace(const char* s) {
  */
 int
 eat_word(char* s) {return 0;}
-bool
-is_word(const char* s) {return false;}
+
 
 /**
  * eat_special TODO

@@ -4,7 +4,7 @@
 #include <error.h>
 #include <getopt.h>
 #include <stdio.h>
-
+#include <string.h>
 #include "command.h"
 
 static char const *program_name;

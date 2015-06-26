@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include "alloc.h"
 // UCLA CS 111 Lab 1 command interface
 
 typedef struct command *command_t;
@@ -38,7 +41,86 @@ read_pipeline(command_t holder, command_stream_t s);
 command_t 
 read_andor(command_t holder, command_stream_t s);
 
-enum token_type 
+
+/*********************************************************************/
+// Queue
+struct node{
+	 char* value;
+	 struct node * next; 
+};
+
+
+typedef struct queue{
+	 struct node * head;
+	 struct node * tail;
+} queue;
+
+queue 
+q_empty()
+{
+	 queue q;
+	 q.head = q.tail = NULL;
+	 return q;
+}
+
+
+int isempty(queue q)
+{
+	 if(q.head == NULL)
+	   return 1;
+	 else
+	   return 0;
+}
+
+queue enqueue(char* in, queue q)
+{
+ struct node * item = (struct node *)checked_malloc(sizeof(struct node));
+ item->value = in;
+ item->next = NULL;
+
+ if(isempty(q))
+ 	q.head = q.tail = item;
+ else
+ {
+    q.tail->next = item;
+  	q.tail = item;
+ }
+ return q;
+};
+
+
+queue dequeue(queue q)
+{
+	struct node * temp;
+	if(q.head)
+	{
+		temp = q.head;
+		q.head = q.head->next;
+		free(temp);
+	}
+	if(isempty(q))
+		return q_empty();
+	return q;
+}
+
+char* next(queue q)
+{
+	 return q.head->value;
+}
+
+
+
+
+
+/*********************************************************************/
+
+
+
+
+queue
+build_token_queue(char* stream, int len);
+
+typedef enum token_type 
   {
 	WORD,  // token
 	IN,    // <
@@ -51,5 +133,6 @@ enum token_type
     LB,  // ( 
 	RB,   // )
 	UNKNOWN
-  };
+  } token_type;
+typedef char* token;
 #define STREAM_BUFFER_SIZE 100
