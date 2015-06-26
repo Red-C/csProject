@@ -7,12 +7,21 @@
 #include <error.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 
 /*********************************************************************/
+/** isWord**/
+#define isNum(c) ((c) >= '0' && (c) <= '9')
+#define	isLet(c) (((c) >= 'A' && (c) <= 'Z') || ((c) >= 'a' && (c) <= 'z'))
+#define isvWord(c) ((c)=='!'||(c)=='%'||(c)=='+'||(c)==','|| \
+	(c)=='-'||(c)=='.'||(c)=='/'||(c)==':'||(c)=='@'||(c)=='^'||(c)=='_')
+
+#define is_word(c) (isNum((c)) || isLet((c)) || isvWord((c)))
+/*********************************************************************/
 // Queue
 struct node{
-	 int value;
+	 char* value;
 	 struct node * next; 
 };
 
@@ -31,7 +40,7 @@ q_empty()
 }
 
 
-int empty_huh(queue q)
+int isempty(queue q)
 {
 	 if(q.head == NULL)
 	   return 1;
@@ -39,26 +48,47 @@ int empty_huh(queue q)
 	   return 0;
 }
 
+queue enqueue(char* in, queue q)
+{
+ struct node * item = (struct node *)checked_malloc(sizeof(struct node));
+ item->value = in;
+ item->next = NULL;
+
+ if(isempty(q))
+ 	q.head = q.tail = item;
+ else
+ {
+    q.tail->next = item;
+  	q.tail = item;
+ }
+ return q;
+};
 
 
+queue dequeue(queue q)
+{
+	struct node * temp;
+	if(q.head)
+	{
+		temp = q.head;
+		q.head = q.head->next;
+		free(temp);
+	}
+	if(isempty(q))
+		return q_empty();
+	return q;
+}
 
+char* next(queue q)
+{
+	 return q.head->value;
+}
 
 
 
 
 
 /*********************************************************************/
-
-
-
-
-
-
-
-
-
-/* FIXME: You may need to add #include directives, macro definitions,
-   static function definitions, etc.  */
 
 
 /* FIXME: Define the type 'struct command_stream' here.  This should
@@ -83,30 +113,25 @@ struct command_stream {
 };
 
 
-command_stream_t
-make_command_stream (int (*get_next_byte) (void *),
-			 void *get_next_byte_argument)
-{
-	return p;
-}
 
 enum token_type 
   {
-	WORD,
-	IN,
-	OUT,
-    AND,         // A && B
-	OR,
-    SEQ,    // A ; B
-    PIPE,        // A | B
-    SIMPLE,      // a simple command
-    LB,    // ( A )
-	RB
+	WORD,  // token
+	IN,    // <
+	OUT,   // >
+    AND,   // &&
+	OR,	   // ||
+    SEQ,   // \n ;
+    PIPE,  // | 
+    SIMPLE,// one or more adjacent characters that are ASCII letters (either upper or lower case), digits, or any of: ! % + , - . / : @ ^
+    LB,  // ( 
+	RB,   // )
+	UNKNOWN
   };
 typedef char* token;
 
 /**
- * eat_whitespace 
+ * eat_whitespace TODO
  * param: 
  * 		s(char*): intput stream
  *
@@ -121,9 +146,44 @@ char* eat_whitespace(char* s) {
 		it++;
 	return it;
 }
+bool 
+is_whitespace(const char* s) {
+	return false;
+}
 
 /**
- * next_token_type
+ * eat_word TODO
+ * param: 
+ * 		it(char*): iterator
+ *
+ * return:
+ * 		length of current word from iterator
+ * descr:
+ * 		count number of word from iterator	
+ */
+int
+eat_word(char* s) {return 0;}
+bool
+is_word(const char* s) {return false;}
+
+/**
+ * eat_special TODO
+ * param: 
+ * 		it(char*): iterator
+ *
+ * return:
+ * 		length of current special character from iterator
+ * descr:
+ * 		return length of special character such as || && | > < 
+ */
+int
+eat_special(char* s) {return 0;}
+bool
+is_special(const char* s) {return false;}
+
+
+/**
+ * next_token_type TODO
  * param: 
  * 		s-command_stream_t: command array that holds all the tokens
  * return:
@@ -134,12 +194,13 @@ char* eat_whitespace(char* s) {
  */
 token_type 
 next_token_type(command_stream_t s)
-{//TODO analyze and return type of next token
-	return 0;
+{
+	//TODO analyze and return type of next token
+	return UNKNOWN;
 }
 
 /**
- * read_token
+ * read_token TODO
  * param: 
  * 		s-command_stream_t: command array that holds all the tokens
  * return:
@@ -155,7 +216,7 @@ read_token(command_stream_t s)
 
 
 /**
- * pop_token
+ * pop_token TODO
  * param: 
  * 		s-command_stream_t: command array that holds all the tokens
  * return:
@@ -173,7 +234,7 @@ pop_token(command_stream_t s)
 
 
 /**
- * malloc_cmd 
+ * malloc_cmd TODO
  * param: 
  * 		null
  * return:
@@ -211,7 +272,7 @@ read_seq(command_t holder, command_stream_t s)
 	{
 		// read first command, this will be the left child of node if 
 		// number of commands in pipeline is more than one
-		command_t cur = read_andor(s);
+		command_t cur = read_andor(NULL, s);
 		return read_seq(cur, s);
 	}
 	 
@@ -228,7 +289,7 @@ read_seq(command_t holder, command_stream_t s)
 
 	// assign left and right child, left associative
 	cmd->u.command[0] = holder;
-	cmd->u.command[1] = read_andor(s);
+	cmd->u.command[1] = read_andor(NULL, s);
 	return read_seq(cmd, s);
 
 }
@@ -293,6 +354,8 @@ read_simple_command( command_stream_t s)
 	  // TODO array with a constant size
 				
 	}
+
+	
 		
 
 		
@@ -415,6 +478,56 @@ read_andor(command_t holder, command_stream_t s)
 }
 
 
+
+queue
+build_token_queue(char* stream, int len)
+{
+	queue Q;
+	char* it = stream;
+	char* end = stream + len;
+	for( it = stream; it <= end; )
+	{
+		if(is_whitespace(it))
+			it = eat_whitespace(it);
+		else if(is_word(*it))
+		{
+			int n = eat_word(it);
+			char* temp = (char *)checked_malloc(sizeof(char) * n + 1);
+			strncpy(temp, it, n);
+			it += n;
+			enqueue(temp, Q);
+		}
+		else if(is_special(it))
+		{
+			int n = eat_special(it);
+			char* temp = (char *)checked_malloc(sizeof(char) * n + 1);
+			strncpy(temp, it, n);
+			it += n;
+			enqueue(temp,Q);
+		}
+		else
+		{
+			// TODO count line number
+			error(0,1,"unexpected character at line x");
+		}
+		
+
+	}
+}
+
+
+
+command_stream_t
+make_command_stream (int (*get_next_byte) (void *),
+			 void *get_next_byte_argument)
+{
+	char c;
+	while((c = get_next_byte(get_next_byte_argument)) != EOF) {
+	 	putc(c);	
+	}
+	return 0;
+}
+
 command_t
 read_command_stream (command_stream_t s)
 {
@@ -422,8 +535,4 @@ read_command_stream (command_stream_t s)
   error (1, 0, "command reading not yet implemented");
   return 0;
 }
-
-
-
-
 

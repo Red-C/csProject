@@ -25,4 +25,31 @@ void execute_command (command_t, int);
 int command_status (command_t);
 
 
+command_t 
+read_seq(command_t holder, command_stream_t s);
+command_t 
+read_subshell( command_stream_t s);
+command_t 
+read_simple_command( command_stream_t s);
+command_t 
+read_single_command( command_stream_t s);
+command_t 
+read_pipeline(command_t holder, command_stream_t s);
+command_t 
+read_andor(command_t holder, command_stream_t s);
+
+enum token_type 
+  {
+	WORD,  // token
+	IN,    // <
+	OUT,   // >
+    AND,   // &&
+	OR,	   // ||
+    SEQ,   // \n ;
+    PIPE,  // | 
+    SIMPLE,// one or more adjacent characters that are ASCII letters (either upper or lower case), digits, or any of: ! % + , - . / : @ ^
+    LB,  // ( 
+	RB,   // )
+	UNKNOWN
+  };
 #define STREAM_BUFFER_SIZE 100
