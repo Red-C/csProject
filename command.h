@@ -1,7 +1,13 @@
+#ifndef COMMAND_H
+#define COMMAND_H
 #include <stdio.h>
 #include <stdlib.h>
 #include "alloc.h"
 // UCLA CS 111 Lab 1 command interface
+
+typedef int bool;
+#define false 0
+#define true 1
 
 typedef struct command *command_t;
 typedef struct command_stream *command_stream_t;
@@ -41,85 +47,32 @@ read_pipeline(command_t holder, command_stream_t s);
 command_t 
 read_andor(command_t holder, command_stream_t s);
 
+/* Return the pointer that points to the next nonwhitespace character */
+char*
+eat_whitespace(char*);
+/* return number of continous char in current position, 0 if current character is not a word */
+int 
+eat_word(char *);
+/* return number of continous char that is special character at current position. 0 if it is not a special character */
+int 
+eat_special(char *);
+/* return number of character after current position if current position is a # */
+int 
+eat_comment(char *);
+
+
+#define STREAM_BUFFER_SIZE 100
+
+
+/** isWord**/
+#define isNum(c) ((c) >= '0' && (c) <= '9')
+#define	isLet(c) (((c) >= 'A' && (c) <= 'Z') || ((c) >= 'a' && (c) <= 'z'))
+#define isvWord(c) ((c)=='!'||(c)=='%'||(c)=='+'||(c)==','|| \
+	(c)=='-'||(c)=='.'||(c)=='/'||(c)==':'||(c)=='@'||(c)=='^'||(c)=='_')
+
+#define is_word(c) (isNum((c)) || isLet((c)) || isvWord((c)))
 
 /*********************************************************************/
-// Queue
-struct node{
-	 char* value;
-	 struct node * next; 
-};
-
-
-typedef struct queue{
-	 struct node * head;
-	 struct node * tail;
-} queue;
-
-queue 
-q_empty()
-{
-	 queue q;
-	 q.head = q.tail = NULL;
-	 return q;
-}
-
-
-int isempty(queue q)
-{
-	 if(q.head == NULL)
-	   return 1;
-	 else
-	   return 0;
-}
-
-queue enqueue(char* in, queue q)
-{
- struct node * item = (struct node *)checked_malloc(sizeof(struct node));
- item->value = in;
- item->next = NULL;
-
- if(isempty(q))
- 	q.head = q.tail = item;
- else
- {
-    q.tail->next = item;
-  	q.tail = item;
- }
- return q;
-};
-
-
-queue dequeue(queue q)
-{
-	struct node * temp;
-	if(q.head)
-	{
-		temp = q.head;
-		q.head = q.head->next;
-		free(temp);
-	}
-	if(isempty(q))
-		return q_empty();
-	return q;
-}
-
-char* next(queue q)
-{
-	 return q.head->value;
-}
-
-
-
-
-
-/*********************************************************************/
-
-
-
-
-queue
-build_token_queue(char* stream, int len);
-
 typedef enum token_type 
   {
 	WORD,  // token
@@ -135,4 +88,46 @@ typedef enum token_type
 	UNKNOWN
   } token_type;
 typedef char* token;
-#define STREAM_BUFFER_SIZE 100
+/*********************************************************************/
+typedef struct pair {
+	token_type key;
+	token value;
+} pair;
+// Queue
+struct node{
+	 pair* value;
+	 struct node * next; 
+};
+
+
+typedef struct queue{
+	 struct node * head;
+	 struct node * tail;
+} queue;
+
+queue 
+q_empty();
+
+int isempty(queue q);
+
+queue enqueue(pair* in, queue q);
+
+queue dequeue(queue q);
+
+pair* next(queue q);
+
+pair*
+b_pair(token_type key, token value);
+
+int 
+free_pair(pair*);
+/*********************************************************************/
+
+
+
+
+queue
+build_token_queue(char* stream, int len);
+
+
+#endif

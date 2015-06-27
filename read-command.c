@@ -8,18 +8,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-typedef int bool;
-#define false 0
-#define true 1
 
 /*********************************************************************/
-/** isWord**/
-#define isNum(c) ((c) >= '0' && (c) <= '9')
-#define	isLet(c) (((c) >= 'A' && (c) <= 'Z') || ((c) >= 'a' && (c) <= 'z'))
-#define isvWord(c) ((c)=='!'||(c)=='%'||(c)=='+'||(c)==','|| \
-	(c)=='-'||(c)=='.'||(c)=='/'||(c)==':'||(c)=='@'||(c)=='^'||(c)=='_')
-
-#define is_word(c) (isNum((c)) || isLet((c)) || isvWord((c)))
 
 /* FIXME: Define the type 'struct command_stream' here.  This should
    complete the incomplete type declaration in command.h.  */
@@ -57,8 +47,12 @@ struct command_stream {
  */
 char* eat_whitespace(char* s) {
 	char* it = s;
-	while(*it == ' ')
+	while(*it == ' ' || *it == '\t' || (*it == '\\' && *(it+1) == '\n')){
+		if(*it == '\\' && *(it+1) == '\n')
+			it++;
 		it++;
+
+	}
 	return it;
 }
 bool 
@@ -77,7 +71,21 @@ is_whitespace(const char* s) {
  * 		count number of word from iterator	
  */
 int
-eat_word(char* s) {return 0;}
+eat_word(char* s) 
+{
+	char* it = s;
+	if(is_word(*it))
+	{
+		int n = 1;
+		it++;
+		while(is_word(*it) || *it == ' ') {
+			n++;
+			it++;
+		}
+		return n;
+	}
+	return 0;
+}
 
 
 /**
@@ -91,10 +99,52 @@ eat_word(char* s) {return 0;}
  * 		return length of special character such as || && | > < 
  */
 int
-eat_special(char* s) {return 0;}
-bool
-is_special(const char* s) {return false;}
+eat_special(char* s) {
+	char* it = s;
+	switch(*it)
+	{
+		case '|':
+			if(*(it+1) != '|') 	return 1;
+			else 				return 2;
+			break;
+		case '&':
+			if(*(it+1) != '&') 	return 0; //TODO ERROR
+			else 				return 2;
+			break;
+		case '>':
+			return 1;break;
+		case '<':
+			return 1;break;
+		default:
+			return 0;break;
+	}
+}
 
+/**
+ * eat_comment TODO
+ * param: 
+ * 		it(char*): iterator
+ *
+ * return:
+ * 		length of current special character from iterator
+ * descr:
+ * 		return length of special character such as || && | > < 
+ */
+int
+eat_comment(char* s) {
+	char* it = s;
+	int n = 0;
+	if(*it == '#')  {
+		do
+		{
+			it++; n++;
+		}
+		while(*it != '\0' && *it != '\n');
+	}
+
+	return n;
+
+}
 
 /**
  * next_token_type TODO
@@ -409,15 +459,15 @@ build_token_queue(char* stream, int len)
 			char* temp = (char *)checked_malloc(sizeof(char) * n + 1);
 			strncpy(temp, it, n);
 			it += n;
-			enqueue(temp, Q);
+			Q = enqueue(temp, Q);
 		}
-		else if(is_special(it))
+		else if(eat_special(it) > 0)
 		{
 			int n = eat_special(it);
 			char* temp = (char *)checked_malloc(sizeof(char) * n + 1);
 			strncpy(temp, it, n);
 			it += n;
-			enqueue(temp,Q);
+			Q = enqueue(temp,Q);
 		}
 		else
 		{
@@ -427,6 +477,7 @@ build_token_queue(char* stream, int len)
 		
 
 	}
+	return Q;
 }
 
 
@@ -437,7 +488,7 @@ make_command_stream (int (*get_next_byte) (void *),
 {
 	char c;
 	while((c = get_next_byte(get_next_byte_argument)) != EOF) {
-	 	putc(c);	
+		putc(c, stdout);
 	}
 	return 0;
 }
@@ -450,3 +501,79 @@ read_command_stream (command_stream_t s)
   return 0;
 }
 
+/********************************************/
+
+
+
+queue 
+q_empty()
+{
+	 queue q;
+	 q.head = q.tail = NULL;
+	 return q;
+}
+
+
+int isempty(queue q)
+{
+	 if(q.head == NULL)
+	   return 1;
+	 else
+	   return 0;
+}
+
+queue enqueue(pair* in, queue q)
+{
+ struct node * item = (struct node *)checked_malloc(sizeof(struct node));
+ item->value = in;
+ item->next = NULL;
+
+ if(isempty(q))
+ 	q.head = q.tail = item;
+ else
+ {
+    q.tail->next = item;
+  	q.tail = item;
+ }
+ return q;
+};
+
+
+queue dequeue(queue q)
+{
+	struct node * temp;
+	if(q.head)
+	{
+		temp = q.head;
+		q.head = q.head->next;
+		free(temp);
+	}
+	if(isempty(q))
+		return q_empty();
+	return q;
+}
+
+pair* next(queue q)
+{
+	 return q.head->value;
+}
+
+pair*
+b_pair(token_type key, token value)
+{
+	pair* p = (pair*) checked_malloc(sizeof(pair));
+	p->key = key;
+	p->value = value;
+	return p;
+}
+
+int 
+free_pair(pair*);
+
+
+
+
+
+
+
+/********************************************/
