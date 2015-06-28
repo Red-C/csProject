@@ -9,6 +9,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+unsigned int _line = 0;
+
 /*********************************************************************/
 
 /* FIXME: Define the type 'struct command_stream' here.  This should
@@ -63,6 +65,7 @@ token_type_of(char* p) {
 					case '(':	return LB;
 					case ')':	return RB;
 					case ';':	return SEQ; 
+					case '\n':  return NEW_LINE;
 					default:
 						return UNKNOWN;
 				}
@@ -146,9 +149,12 @@ eat_special(char* s) {
 			else 				return 2;
 			break;
 		case '>':
-			return 1;break;
 		case '<':
+		case ';':
+		case '(':
+		case ')':
 			return 1;break;
+
 		default:
 			return 0;break;
 	}
@@ -193,43 +199,20 @@ eat_comment(char* s) {
 token_type 
 next_token_type(queue s)
 {
-	if(next(s) != NULL)
-		return next(s)->key;
+	while(next(s) != NULL) {
+		if(next(s)->key == BACK_SLASH) {
+			_line++;
+			s = destroy(s);
+		}
+		else if(next(s)->key == NEW_LINE) {
+			_line++;
+			return SEQ;
+		}
+		else
+			return next(s)->key;
+	}
 	return UNKNOWN;
 }
-
-/**
- * read_token TODO
- * param: 
- * 		s-command_stream_t: command array that holds all the tokens
- * return:
- * 		token: next available token, null is reached end of file
- * descr:
- * 		remove next token and return
-token
-read_token(command_stream_t s)
-{
-	return 0;
-}
- */
-
-
-/**
- * pop_token TODO
- * param: 
- * 		s-command_stream_t: command array that holds all the tokens
- * return:
- * 		int: 1 pop successful
- * 			 0 end of file
- *
- * 		descr:
- * 			remove next token, can be implemented by read_token
-int 
-pop_token(command_stream_t s)
-{
-	return 0;
-}
- */
 
 
 /**
@@ -267,7 +250,7 @@ malloc_cmd()
  * 		this will recursively call read_andor function and itself
  */
 command_t 
-read_seq(command_t holder, queue s)
+read_seq(command_t holder, queue *s)
 {
 	//
 	// beginning of current pipeline 
@@ -281,16 +264,17 @@ read_seq(command_t holder, queue s)
 	 
 	command_t cmd;
 	// end of pipeline
-	if(next_token_type(s) != SEQ)		
+	if(next_token_type(*s) != SEQ)		
 		return holder;
 	// allocate memory for current pipeline command
 	else  								
 	{ 
-		s = dequeue(s);
+		*s = destroy(*s);
 		cmd = malloc_cmd();
 	}
 
 	// assign left and right child, left associative
+	cmd->type = SEQUENCE_COMMAND;
 	cmd->u.command[0] = holder;
 	cmd->u.command[1] = read_andor(NULL, s);
 	return read_seq(cmd, s);
@@ -312,18 +296,21 @@ read_seq(command_t holder, queue s)
  * 		inside of bracket. if right bracket is not exist, throw exception
  */
 command_t 
-read_subshell(queue s) 
+read_subshell(queue *s) 
 {
 	command_t cmd = malloc_cmd();
-	if(next_token_type(s) == LB)
+	if(next_token_type(*s) == LB)
 	{	
 		// build subshell
 		cmd->type = SUBSHELL_COMMAND;
-		s = dequeue(s);
+		*s = destroy(*s);
 		cmd->u.subshell_command = read_seq(NULL, s);
 		
 		// match right shell
-		if(next_token_type(s) == RB)	return cmd;
+		if(next_token_type(*s) == RB)	{
+			*s = destroy(*s);	
+			return cmd;
+		}
 		else 							error(1,0, "invalid subshell format: right bracket is not found");
 	}
 	else
@@ -346,22 +333,23 @@ read_subshell(queue s)
  * 		token into struct
  */
 command_t 
-read_simple_command( queue s) 
+read_simple_command( queue *s) 
 {
 	
 	command_t cmd = malloc_cmd();
 	int n = 0;
 	queue words = q_empty();
 
-	while(next_token_type(s) == WORD)
+	while(next_token_type(*s) == WORD)
 	{
-		words = enqueue(next(s), words);
-		s = dequeue(s);
+		words = enqueue(next(*s), words);
+		*s = dequeue(*s);
 		n++;
 	}
 
 	if(n != 0) 
 	{
+		cmd->type = SIMPLE_COMMAND;
 		cmd->u.word = (char**)checked_malloc(sizeof(char*) * n + 1);
 		n = 0;
 		for(n = 0; isempty(words) == false; n++) 
@@ -372,30 +360,30 @@ read_simple_command( queue s)
 			words = dequeue(words);
 		}
 
-		token_type type = next_token_type(s);
+		token_type type = next_token_type(*s);
 		if(type == IN)
 		{
-			char* in = next(s)->value;
-			s = dequeue(s);
+			char* in = next(*s)->value;
+			*s = dequeue(*s);
 			cmd->input = in;
-			type = next_token_type(s);
+			type = next_token_type(*s);
 			if(type == OUT)
 			{
-				char* out = next(s)->value;
-				s = dequeue(s);
+				char* out = next(*s)->value;
+				*s = dequeue(*s);
 				cmd->output = out;
 			}
 		}
 		else if(type == OUT)
 		{
-			char* out = next(s)->value;
-			s = dequeue(s);
+			char* out = next(*s)->value;
+			*s = dequeue(*s);
 			cmd->output = out;
-			type = next_token_type(s);
+			type = next_token_type(*s);
 			if(type == IN)
 			{
-				char* in = next(s)->value;
-				s = dequeue(s);
+				char* in = next(*s)->value;
+				*s = dequeue(*s);
 				cmd->input = in;
 			}
 		}
@@ -427,7 +415,7 @@ read_simple_command( queue s)
  * 		left associative
  */
 command_t 
-read_pipeline(command_t holder, queue s) 
+read_pipeline(command_t holder, queue* s) 
 {
 	// beginning of current pipeline 
 	if( holder == NULL) 
@@ -440,17 +428,18 @@ read_pipeline(command_t holder, queue s)
 	 
 	command_t cmd;
 	// end of pipeline
-	if(next_token_type(s) != PIPE)		
+	if(next_token_type(*s) != PIPE)		
 		return holder;
 	
 	// allocate memory for current pipeline command
-	s = dequeue(s);
+	*s = dequeue(*s);
 	cmd = malloc_cmd();
 
+	cmd->type = PIPE_COMMAND;
 	// assign left and right child, left associative
 	cmd->u.command[0] = holder;
 	cmd->u.command[1] = read_simple_command(s);
-	return read_simple_command(s);
+	return read_pipeline(cmd, s);
 
 }
 
@@ -468,12 +457,12 @@ read_pipeline(command_t holder, queue s)
  * 		left associative
  */
 command_t 
-read_andor(command_t holder, queue s) 
+read_andor(command_t holder, queue *s) 
 {
 	// beginning of current complete command
 	if( holder == NULL) 
 	{
-		token_type t = next_token_type(s);
+		token_type t = next_token_type(*s);
 		command_t cur;
 		// read subshell command if ( is reached
 		if(t == LB)
@@ -487,14 +476,14 @@ read_andor(command_t holder, queue s)
 	else { 
 		command_t cmd;
 		// get type of next token, will not modified stream
-		token_type ttype = next_token_type(s);
+		token_type ttype = next_token_type(*s);
 		
 		// end of current complete command 
 		if(ttype != OR && ttype != AND)		
 			return holder;
 		// allocate memory for cmd and remove first token {|| &&}
 			
-		s = dequeue(s);
+		*s = dequeue(*s);
 		cmd = malloc_cmd();
 		if(ttype == OR)
 			cmd->type = OR_COMMAND;
@@ -502,9 +491,9 @@ read_andor(command_t holder, queue s)
 			cmd->type = AND_COMMAND;
 		
 		// OR COMMAND
-		if(next_token_type(s) == OR)			cmd->type = OR_COMMAND;
+		if(next_token_type(*s) == OR)			cmd->type = OR_COMMAND;
 		// AND COMMAND
-		else if( next_token_type(s) == AND)		cmd->type = AND_COMMAND;
+		else if( next_token_type(*s) == AND)		cmd->type = AND_COMMAND;
 
 		cmd->u.command[0] = holder;
 		cmd->u.command[1] = read_pipeline(NULL, s);
@@ -524,8 +513,10 @@ build_token_queue(char* stream)
 	while(tok != NULL) {
 		token_type type = token_type_of(tok);
 
-		if(type == UNKNOWN)
+		if(type == UNKNOWN){
+			printf("unknow type: [%s]\n", tok);
 			error(0,1,"unknown type");
+		}
 		Q = enqueue(b_pair(token_type_of(tok), tok), Q);
 		tok = strtok(NULL, " ");
 	}
@@ -661,6 +652,21 @@ queue enqueue(pair* in, queue q)
  return q;
 };
 
+queue destroy(queue q)
+{
+	struct node * temp;
+	if(q.head)
+	{
+		temp = q.head;
+		q.head = q.head->next;
+		if(temp->value != NULL)
+			free(temp->value);
+		free(temp);
+	}
+	if(isempty(q))
+		return q_empty();
+	return q;
+}
 
 queue dequeue(queue q)
 {
@@ -678,13 +684,13 @@ queue dequeue(queue q)
 
 pair* next(queue q)
 {
-	if(isempty(q.head) == false)
+	if(isempty(q) == false)
 	 	return q.head->value;
 	return NULL;
 }
 
 pair*
-b_pair(token_type key, token value)
+b_pair(token_type key, char* value)
 {
 	pair* p = (pair*) checked_malloc(sizeof(pair));
 	p->key = key;

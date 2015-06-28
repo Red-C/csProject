@@ -47,6 +47,8 @@ typedef enum token_type
     LB,  // ( 
 	RB,   // )
 	COMMENT, // #
+	NEW_LINE,
+	BACK_SLASH,
 	UNKNOWN
   } token_type;
 typedef char* token;
@@ -79,6 +81,8 @@ queue enqueue(pair* in, queue q);
 
 queue dequeue(queue q);
 
+queue destroy(queue q);
+
 pair* next(queue q);
 
 pair*
@@ -89,17 +93,17 @@ free_pair(pair*);
 /*********************************************************************/
 
 command_t 
-read_seq(command_t holder, queue s);
+read_seq(command_t holder, queue *s);
 command_t 
-read_subshell( queue s);
+read_subshell( queue *s);
 command_t 
-read_simple_command( queue s);
+read_simple_command( queue *s);
 command_t 
 read_single_command( queue s);
 command_t 
-read_pipeline(command_t holder, queue s);
+read_pipeline(command_t holder, queue *s);
 command_t 
-read_andor(command_t holder, queue s);
+read_andor(command_t holder, queue *s);
 
 /* Return the pointer that points to the next nonwhitespace character */
 char*
@@ -131,5 +135,6 @@ eat_comment(char *);
 
 queue
 build_token_queue(char* stream);
+
 
 #endif
