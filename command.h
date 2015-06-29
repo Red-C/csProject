@@ -78,7 +78,7 @@ typedef struct queue{
 queue 
 q_empty();
 
-int isempty(queue q);
+bool isempty(queue q);
 
 queue enqueue(pair* in, queue q);
 
@@ -146,7 +146,7 @@ struct command_stream {
 	int iterator;
 
 	command_t* command_queue;
-	int size;
+	size_t size;
 
 };
 //TODO delete
