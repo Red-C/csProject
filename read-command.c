@@ -29,20 +29,32 @@ token_type
 next_token_type(queue s)
 {
 	while(next(s) != NULL) {
-		if(next(s)->key == BACK_SLASH) {
+		if(((pair*)next(s))->key == BACK_SLASH) {
 			_line++;
 			s = destroy(s);
 		}
-		else if(next(s)->key == NEW_LINE) {
+		else if(((pair*)next(s))->key == NEW_LINE) {
 			_line++;
-			return SEQ;
+			s = destroy(s);
 		}
 		else
-			return next(s)->key;
+			return ((pair*)next(s))->key;
 	}
 	return UNKNOWN;
 }
 
+bool
+isSEQ(queue s) 
+{
+	token_type type;
+	if(next(s) != NULL) {
+		type = ((pair*)next(s))->key;
+		if(type == NEW_LINE || type == SEQ)
+			return true;
+	}
+	return false;
+
+}
 
 /**
  * malloc_cmd TODO
@@ -93,7 +105,7 @@ read_seq(command_t holder, queue *s)
 	 
 	command_t cmd;
 	// end of pipeline
-	if(next_token_type(*s) != SEQ)		
+	if(isSEQ(*s) != SEQ)		
 		return holder;
 	// allocate memory for current pipeline command
 	else  								
@@ -342,8 +354,8 @@ read_andor(command_t holder, queue *s)
 	}
 }
 
-
-command_t* prefix_traversal(command_t* Q, command_t cmd, int *i) {
+command_t* prefix_traversal(queue* Q, command_t cmd, int *i) {
+	/*
 	if(cmd == NULL)
 		lineError(-1);
 	if(cmd->type != SEQUENCE_COMMAND) 
@@ -355,9 +367,12 @@ command_t* prefix_traversal(command_t* Q, command_t cmd, int *i) {
 		Q = prefix_traversal(Q, cmd->u.command[1]);
 	}
 	return Q;
+	*/
+	return NULL;
 }
 
-command_stream_t build_token_tree(queue Q, queue (*traversal) (queue, command_t)) {
+command_stream_t build_token_tree(queue Q, command_t* (*traversal) (queue*, command_t, int*)) {
+	/*
 	command_stream_t cmd_stream = (command_stream_t)checked_malloc(sizeof(struct command_stream));
 	cmd_stream->root = read_seq(NULL, &Q);
 	cmd_stream->iterator = cmd_stream->root;
@@ -367,17 +382,10 @@ command_stream_t build_token_tree(queue Q, queue (*traversal) (queue, command_t)
 	command_queue = traversal(command_queue, cmd_stream->root);
 	int i = 0;
 	cmd_stream.command_queue = (command_t*)checked_malloc(sizeof(command_t) * n);
-	for(i = 0; i < command_queue.size; i++) {
-		cmd_stream->command_queue[i] = (command_t)checked_malloc(sizeof(struct command));
-		memcpy(cmd_stream->command_queue[i], next(command_queue), sizeof(struct command));
-		cmd_stream->command_queue[i] = next(command_queue);
-			
-	}
-	//TODO
-	// cmd_stream->next
-	// cmd_stream->build_traversal_queue()
 
 	return cmd_stream;
+	*/
+	return NULL;
 }
 
 command_stream_t
@@ -408,7 +416,7 @@ make_command_stream (int (*get_next_byte) (void *),
 command_t
 read_command_stream (command_stream_t s)
 {
-	command_t cmd = next(s->command_queue);
+	//command_t cmd = next(s->command_queue);
   error (1, 0, "command reading not yet implemented");
   return 0;
 }
@@ -435,7 +443,7 @@ int isempty(queue q)
 	   return 0;
 }
 
-queue enqueue(void* in, queue q)
+queue enqueue(pair* in, queue q)
 {
  struct node * item = (struct node *)checked_malloc(sizeof(struct node));
  item->value = in;
@@ -492,7 +500,7 @@ queue dequeue(queue q)
 	return q;
 }
 
-void* next(queue q)
+pair* next(queue q)
 {
 	if(isempty(q) == false)
 	 	return q.head->value;
@@ -508,5 +516,3 @@ b_pair(token_type key, char* value)
 	return p;
 }
 
-
-/********************************************/

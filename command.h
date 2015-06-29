@@ -63,7 +63,7 @@ typedef struct pair {
 
 // Queue
 struct node{
-	 void* value;
+	 pair* value;
 	 struct node * next; 
 };
 
@@ -79,13 +79,13 @@ q_empty();
 
 int isempty(queue q);
 
-queue enqueue(void* in, queue q);
+queue enqueue(pair* in, queue q);
 
 queue dequeue(queue q);
 
 queue destroy(queue q);
 
-void* next(queue q);
+pair* next(queue q);
 
 pair*
 b_pair(token_type key, char* value);
