@@ -420,30 +420,27 @@ read_andor(command_t holder, queue *s)
 	}
 }
 
-command_t* prefix_traversal_helper(command_t* Q, command_t cmd, int *cap, int *i) {
+command_t* prefix_traversal_helper(command_t* Q, command_t cmd, unsigned *cap, unsigned *i) {
 	if(*i + 4 >= *cap)
 		Q = (command_t*)checked_grow_alloc(Q, (unsigned*)cap);
 
 	if(cmd == NULL)
-		lineError(-1);			// not possible to happen, but it has happened
-	if(cmd->type != SEQUENCE_COMMAND) 
 		return Q;
+	if(cmd->type != SEQUENCE_COMMAND) {
+		Q[(*i)++] = cmd;
+		return Q;
+	}
 	else
 	{
 		Q = prefix_traversal_helper(Q, cmd->u.command[0], cap, i);
-		if(cmd->u.command[1] == NULL)
-			Q[(*i)++] = cmd->u.command[0];
-		else {
-			Q[(*i)++] = cmd;
-			Q = prefix_traversal_helper(Q, cmd->u.command[1], cap, i);
-		}
+		Q = prefix_traversal_helper(Q, cmd->u.command[1], cap, i);
 	}
 	return Q;
 }
 
-command_t* prefix_traversal(command_t root, int *i)
+command_t* prefix_traversal(command_t root, unsigned *i)
 {
-	int cap = 10;
+	unsigned cap = 1024;
 	*i = 0;
 	command_t* cmd_queue = (command_t*)checked_malloc(sizeof(command_t) * cap);
 	return prefix_traversal_helper(cmd_queue, root, &cap, i);
