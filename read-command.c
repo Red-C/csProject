@@ -13,178 +13,7 @@ unsigned int _line = 0;
 
 /*********************************************************************/
 
-/* FIXME: Define the type 'struct command_stream' here.  This should
-   complete the incomplete type declaration in command.h.  */
-/*  
- * tree data structure, 
- * ';' has highest priority
- * && and || has left associative property
- * | Pipe command
- * simple command 
- *  */
 
-
-struct command_stream {
-	
-	command_t root;
-	command_t iterator;
-
-	char* buffer;
-	size_t size;
-	size_t cap;
-};
-
-
-token_type 
-token_type_of(char* p) {
-	char* it = p;
-	unsigned int n = 0;
-	if((n =eat_word(it)) != 0)
-	{	
-		if(n == strlen(p))
-			return WORD;
-	}	
-	else if((n = eat_comment(p)) != 0)
-		return COMMENT;
-	else if((n = eat_special(p)) != 0)
-	{
-		if(n == strlen(p)) {
-			if(n == 2) {
-				switch(*p) {
-				case '|':
-					return OR;
-				case '&':
-					return AND;
-				}
-			}
-			else if(n == 1) {
-				switch(*p) {
-					case '|':	return PIPE;
-					case '<':	return IN;
-					case '>':	return OUT;
-					case '(':	return LB;
-					case ')':	return RB;
-					case ';':	return SEQ; 
-					case '\n':  return NEW_LINE;
-					default:
-						return UNKNOWN;
-				}
-			}
-		}
-	}
-
-	return UNKNOWN;
-
-}
-
-/**
- * eat_whitespace TODO
- * param: 
- * 		s(char*): intput stream
- *
- * return:
- * 		char*: pointer to the character after whitespace
- * descr:
- * 		eat all prefix whitespace
- */
-char* eat_whitespace(char* s) {
-	char* it = s;
-	while(*it == ' ' || *it == '\t' || (*it == '\\' && *(it+1) == '\n')){
-		if(*it == '\\' && *(it+1) == '\n')
-			it++;
-		it++;
-
-	}
-	return it;
-}
-
-/**
- * eat_word TODO
- * param: 
- * 		it(char*): iterator
- *
- * return:
- * 		length of current word from iterator
- * descr:
- * 		count number of word from iterator	
- */
-int eat_word(char* s) 
-{
-	char* it = s;
-	if(is_word(*it))
-	{
-		int n = 1;
-		it++;
-		while(is_word(*it)) {
-			n++;
-			it++;
-		}
-		return n;
-	}
-	return 0;
-}
-
-
-/**
- * eat_special TODO
- * param: 
- * 		it(char*): iterator
- *
- * return:
- * 		length of current special character from iterator
- * descr:
- * 		return length of special character such as || && | > < 
- */
-int
-eat_special(char* s) {
-	char* it = s;
-	switch(*it)
-	{
-		case '|':
-			if(*(it+1) != '|') 	return 1;
-			else 				return 2;
-			break;
-		case '&':
-			if(*(it+1) != '&') 	return 0; //TODO ERROR
-			else 				return 2;
-			break;
-		case '>':
-		case '<':
-		case ';':
-		case '(':
-		case ')':
-			return 1;break;
-
-		default:
-			return 0;break;
-	}
-}
-
-/**
- * eat_comment TODO
- * param: 
- * 		it(char*): iterator
- *
- * return:
- * 		length of current special character from iterator
- * descr:
- * 		return length of special character such as || && | > < 
- */
-int
-eat_comment(char* s) {
-	char* it = s;
-	int n = 0;
-	if(*it == '#')  {
-		do
-		{
-			it++; n++;
-		}
-		while(*it != '\0' && *it != '\n');
-	}
-
-	return n;
-
-}
 
 /**
  * next_token_type TODO
@@ -311,7 +140,8 @@ read_subshell(queue *s)
 			*s = destroy(*s);	
 			return cmd;
 		}
-		else 							error(1,0, "invalid subshell format: right bracket is not found");
+		else
+			error(1,0, "invalid subshell format: right bracket is not found");
 	}
 	else
 		error(1,0, "invalid subshell format: left bracket is not found");
@@ -335,6 +165,9 @@ read_subshell(queue *s)
 command_t 
 read_simple_command( queue *s) 
 {
+	if (isempty(*s)) {
+		lineError(_line);
+	}
 	
 	command_t cmd = malloc_cmd();
 	int n = 0;
@@ -342,7 +175,7 @@ read_simple_command( queue *s)
 
 	while(next_token_type(*s) == WORD)
 	{
-		words = enqueue(next(*s), words);
+		words = enqueue(b_pair(next(*s)->key, next(*s)->value), words);
 		*s = dequeue(*s);
 		n++;
 	}
@@ -363,28 +196,32 @@ read_simple_command( queue *s)
 		token_type type = next_token_type(*s);
 		if(type == IN)
 		{
+			*s = destroy(*s);
 			char* in = next(*s)->value;
-			*s = dequeue(*s);
 			cmd->input = in;
-			type = next_token_type(*s);
+			*s = dequeue(*s);
+			type = next_token_type(*s);;
 			if(type == OUT)
 			{
+				*s = destroy(*s);
 				char* out = next(*s)->value;
-				*s = dequeue(*s);
 				cmd->output = out;
+				*s = dequeue(*s);
 			}
 		}
 		else if(type == OUT)
 		{
+			*s = destroy(*s);
 			char* out = next(*s)->value;
-			*s = dequeue(*s);
 			cmd->output = out;
+			*s = dequeue(*s);
 			type = next_token_type(*s);
 			if(type == IN)
 			{
+				*s = destroy(*s);
 				char* in = next(*s)->value;
-				*s = dequeue(*s);
 				cmd->input = in;
+				*s = dequeue(*s);
 			}
 		}
 		cmd->u.word[n] = (char*) checked_malloc(1);
@@ -496,6 +333,8 @@ read_andor(command_t holder, queue *s)
 		else if( next_token_type(*s) == AND)		cmd->type = AND_COMMAND;
 
 		cmd->u.command[0] = holder;
+		if(next_token_type(*s) == LB)
+			cmd->u.command[1] = read_subshell(s);
 		cmd->u.command[1] = read_pipeline(NULL, s);
 		// left associtive
 		return read_andor(cmd, s);
@@ -504,29 +343,41 @@ read_andor(command_t holder, queue *s)
 }
 
 
-
-queue
-build_token_queue(char* stream)
-{
-	queue Q = q_empty();
-	char* tok = strtok(stream, " ");
-	while(tok != NULL) {
-		token_type type = token_type_of(tok);
-
-		if(type == UNKNOWN){
-			printf("unknow type: [%s]\n", tok);
-			error(0,1,"unknown type");
-		}
-		Q = enqueue(b_pair(token_type_of(tok), tok), Q);
-		tok = strtok(NULL, " ");
+command_t* prefix_traversal(command_t* Q, command_t cmd, int *i) {
+	if(cmd == NULL)
+		lineError(-1);
+	if(cmd->type != SEQUENCE_COMMAND) 
+		return Q;
+	else
+	{
+		Q = prefix_traversal(Q, cmd->u.command[0], i);
+		Q = enqueue((void*)cmd, Q);
+		Q = prefix_traversal(Q, cmd->u.command[1]);
 	}
-
 	return Q;
 }
 
-command_stream_t build_token_tree(queue Q) {
+command_stream_t build_token_tree(queue Q, queue (*traversal) (queue, command_t)) {
+	command_stream_t cmd_stream = (command_stream_t)checked_malloc(sizeof(struct command_stream));
+	cmd_stream->root = read_seq(NULL, &Q);
+	cmd_stream->iterator = cmd_stream->root;
+	cmd_stream->command_queue = q_empty();
+	cmd_stream->traversal = traversal; 
+	queue command_queue = q_empty();
+	command_queue = traversal(command_queue, cmd_stream->root);
+	int i = 0;
+	cmd_stream.command_queue = (command_t*)checked_malloc(sizeof(command_t) * n);
+	for(i = 0; i < command_queue.size; i++) {
+		cmd_stream->command_queue[i] = (command_t)checked_malloc(sizeof(struct command));
+		memcpy(cmd_stream->command_queue[i], next(command_queue), sizeof(struct command));
+		cmd_stream->command_queue[i] = next(command_queue);
+			
+	}
 	//TODO
-	return NULL;
+	// cmd_stream->next
+	// cmd_stream->build_traversal_queue()
+
+	return cmd_stream;
 }
 
 command_stream_t
@@ -538,79 +389,26 @@ make_command_stream (int (*get_next_byte) (void *),
 	size_t n = 0;
 	size_t cap = STREAM_BUFFER_SIZE;
 
-	char d;
-	while((c = get_next_byte(get_next_byte_argument)) != EOF) {
-		
-		switch(c) {
-			case '|':
-			case '&':
-				buffer[n++] = ' ';
-				buffer[n++] = c;
-				if((d = get_next_byte(get_next_byte_argument)) != EOF) {
-					if(d == c) {
-						buffer[n++] = d;
-						buffer[n++] = ' ';
-					}
-					else
-					{
-						buffer[n++] = ' ';
-						buffer[n++] = d;
-					}
-				}
-				break;
-			case '<':
-			case '>':
-				buffer[n++] = ' ';
-				buffer[n++] = c;
-				buffer[n++] = ' ';
-				break;
-			case '\\':
-				if((d = get_next_byte(get_next_byte_argument)) != EOF) {
-					if(d == '\n') 
-						buffer[n++] = '\n';
-					else
-					{
-						buffer[n++] = ' ';
-						buffer[n++] = '\\';
-						buffer[n++] = ' ';
-						buffer[n++] = d;
-					}
-				}
-				break;
-			case '\n':
-				buffer[n++] = ' ';
-				buffer[n++] = ';';
-				buffer[n++] = ' ';
-				buffer[n++] = '\n';
-				buffer[n++] = ' ';
-				break;
-			case ';':
-				buffer[n++] = ' ';
-				buffer[n++] = c;
-				buffer[n++] = ' ';
-				break;
-			default:
-				buffer[n++] = c;
-				break;
-
-			
-		}
-
+	while((c = get_next_byte(get_next_byte_argument)) != EOF)
+	{
+		buffer[n++] = c;
 		if(n + 1 >= cap * 0.8) {
 			buffer = (char*) checked_grow_alloc(buffer, &cap);
 		}
 	}
 	buffer[n] = '\0';
 
-	queue Q = build_token_queue(buffer);
-	command_stream_t T = build_token_tree(Q);
+	queue Q;
+	Q = partition(buffer);
+	free(buffer);
+	command_stream_t T = build_token_tree(Q, prefix_traversal);
 	return T;
 }
 
 command_t
 read_command_stream (command_stream_t s)
 {
-  /* FIXME: Replace this with your implementation too.  */
+	command_t cmd = next(s->command_queue);
   error (1, 0, "command reading not yet implemented");
   return 0;
 }
@@ -624,6 +422,7 @@ q_empty()
 {
 	 queue q;
 	 q.head = q.tail = NULL;
+	 q.size = 0;
 	 return q;
 }
 
@@ -636,7 +435,7 @@ int isempty(queue q)
 	   return 0;
 }
 
-queue enqueue(pair* in, queue q)
+queue enqueue(void* in, queue q)
 {
  struct node * item = (struct node *)checked_malloc(sizeof(struct node));
  item->value = in;
@@ -649,23 +448,31 @@ queue enqueue(pair* in, queue q)
     q.tail->next = item;
   	q.tail = item;
  }
+ q.size++;
  return q;
 };
 
 queue destroy(queue q)
 {
+	return dequeue(q);
+	/*
 	struct node * temp;
 	if(q.head)
 	{
 		temp = q.head;
 		q.head = q.head->next;
-		if(temp->value != NULL)
+		if(temp->value != NULL) {
+			if(temp->value->value != NULL) {
+				free(temp->value->value);
+			}
 			free(temp->value);
+		}
 		free(temp);
 	}
 	if(isempty(q))
 		return q_empty();
 	return q;
+	*/
 }
 
 queue dequeue(queue q)
@@ -675,14 +482,17 @@ queue dequeue(queue q)
 	{
 		temp = q.head;
 		q.head = q.head->next;
+		if(temp->value != NULL)
+			free(temp->value);
 		free(temp);
+		q.size--;
 	}
 	if(isempty(q))
 		return q_empty();
 	return q;
 }
 
-pair* next(queue q)
+void* next(queue q)
 {
 	if(isempty(q) == false)
 	 	return q.head->value;
@@ -698,7 +508,5 @@ b_pair(token_type key, char* value)
 	return p;
 }
 
-int 
-free_pair(pair*);
 
 /********************************************/

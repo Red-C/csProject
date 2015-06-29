@@ -2,6 +2,7 @@
 #define COMMAND_H
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "alloc.h"
 #include "command-internals.h"
 // UCLA CS 111 Lab 1 command interface
@@ -43,7 +44,6 @@ typedef enum token_type
 	OR,	   // ||
     SEQ,   // \n ;
     PIPE,  // | 
-    SIMPLE,// one or more adjacent characters that are ASCII letters (either upper or lower case), digits, or any of: ! % + , - . / : @ ^
     LB,  // ( 
 	RB,   // )
 	COMMENT, // #
@@ -60,9 +60,10 @@ typedef struct pair {
 	token_type key;
 	char* value;
 } pair;
+
 // Queue
 struct node{
-	 pair* value;
+	 void* value;
 	 struct node * next; 
 };
 
@@ -70,6 +71,7 @@ struct node{
 typedef struct queue{
 	 struct node * head;
 	 struct node * tail;
+	 unsigned int size;
 } queue;
 
 queue 
@@ -77,13 +79,13 @@ q_empty();
 
 int isempty(queue q);
 
-queue enqueue(pair* in, queue q);
+queue enqueue(void* in, queue q);
 
 queue dequeue(queue q);
 
 queue destroy(queue q);
 
-pair* next(queue q);
+void* next(queue q);
 
 pair*
 b_pair(token_type key, char* value);
@@ -133,8 +135,17 @@ eat_comment(char *);
 
 
 
-queue
-build_token_queue(char* stream);
+queue partition(char* input);
+void lineError(int numLine);
 
+
+struct command_stream {
+	
+	command_t root;
+	command_t iterator;
+
+	command_t* command_queue;
+	command_t* (*traversal) (queue, command_t);
+};
 
 #endif

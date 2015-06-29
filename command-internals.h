@@ -8,7 +8,7 @@ enum command_type
     OR_COMMAND,          // A || B
     PIPE_COMMAND,        // A | B
     SIMPLE_COMMAND,      // a simple command
-    SUBSHELL_COMMAND,    // ( A )
+    SUBSHELL_COMMAND    // ( A )
   };
 
 // Data associated with a command.
