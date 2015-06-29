@@ -15,6 +15,7 @@ COMMAND_INTERNALS_H	command-internals.h	3;"	d
 COMMENT	command.h	/^	COMMENT, \/\/ #$/;"	e	enum:token_type
 DISTDIR	Makefile	/^DISTDIR = lab1-$(USER)$/;"	m
 DIST_SOURCES	Makefile	/^DIST_SOURCES = \\$/;"	m
+END_OF_LINE	command.h	/^	END_OF_LINE$/;"	e	enum:token_type
 IN	command.h	/^	IN,    \/\/ <$/;"	e	enum:token_type
 LAB	Makefile	/^LAB = 1$/;"	m
 LB	command.h	/^    LB,  \/\/ ( $/;"	e	enum:token_type
@@ -29,20 +30,19 @@ RB	command.h	/^	RB,   \/\/ )$/;"	e	enum:token_type
 SEQ	command.h	/^    SEQ,   \/\/ \\n ;$/;"	e	enum:token_type
 SEQUENCE_COMMAND	command-internals.h	/^    SEQUENCE_COMMAND,    \/\/ A ; B$/;"	e	enum:command_type
 SIMPLE_COMMAND	command-internals.h	/^    SIMPLE_COMMAND,      \/\/ a simple command$/;"	e	enum:command_type
-STREAM_BUFFER_SIZE	command.h	123;"	d
+STREAM_BUFFER_SIZE	command.h	124;"	d
 SUBSHELL_COMMAND	command-internals.h	/^    SUBSHELL_COMMAND    \/\/ ( A )$/;"	e	enum:command_type
 TESTS	Makefile	/^TESTS = $(wildcard test*.sh)$/;"	m
 TEST_BASES	Makefile	/^TEST_BASES = $(subst .sh,,$(TESTS))$/;"	m
 TIMETRASH_OBJECTS	Makefile	/^TIMETRASH_OBJECTS = $(subst .c,.o,$(TIMETRASH_SOURCES))$/;"	m
 TIMETRASH_SOURCES	Makefile	/^TIMETRASH_SOURCES = \\$/;"	m
-UNKNOWN	command.h	/^	UNKNOWN$/;"	e	enum:token_type
-UP_RATE	command.h	124;"	d
+UP_RATE	command.h	125;"	d
 WORD	command.h	/^	WORD,  \/\/ token$/;"	e	enum:token_type
 _line	read-command.c	/^unsigned int _line = 0;$/;"	v
 b_pair	read-command.c	/^b_pair(token_type key, char* value)$/;"	f
 bool	command.h	/^typedef int bool;$/;"	t
 build_token_queue	build_token_queue_test.c	12;"	d	file:
-build_token_tree	read-command.c	/^command_stream_t build_token_tree(queue Q, queue (*traversal) (command_t, queue)) {$/;"	f
+build_token_tree	read-command.c	/^command_stream_t build_token_tree(queue Q) {$/;"	f
 check_nonnull	alloc.c	/^check_nonnull (void *p)$/;"	f	file:
 checked_grow_alloc	alloc.c	/^checked_grow_alloc (void *ptr, size_t *size)$/;"	f
 checked_malloc	alloc.c	/^checked_malloc (size_t size)$/;"	f
@@ -50,7 +50,7 @@ checked_realloc	alloc.c	/^checked_realloc (void *ptr, size_t size)$/;"	f
 command	command-internals.h	/^    struct command *command[2];$/;"	m	union:command::__anon1	typeref:struct:command::__anon1::command
 command	command-internals.h	/^struct command$/;"	s
 command_indented_print	print-command.c	/^command_indented_print (int indent, command_t c)$/;"	f	file:
-command_queue	command.h	/^	queue command_queue;$/;"	m	struct:command_stream
+command_queue	command.h	/^	command_t* command_queue;$/;"	m	struct:command_stream
 command_status	execute-command.c	/^command_status (command_t c)$/;"	f
 command_stream	command.h	/^struct command_stream {$/;"	s
 command_stream_t	command.h	/^typedef struct command_stream *command_stream_t;$/;"	t	typeref:struct:command_stream
@@ -58,7 +58,7 @@ command_t	command.h	/^typedef struct command *command_t;$/;"	t	typeref:struct:co
 command_type	command-internals.h	/^enum command_type$/;"	g
 dequeue	read-command.c	/^queue dequeue(queue q)$/;"	f
 destroy	read-command.c	/^queue destroy(queue q)$/;"	f
-enqueue	read-command.c	/^queue enqueue(void* in, queue q)$/;"	f
+enqueue	read-command.c	/^queue enqueue(pair* in, queue q)$/;"	f
 execute_command	execute-command.c	/^execute_command (command_t c, int time_travel)$/;"	f
 false	command.h	11;"	d
 get_next_byte	build_token_queue_test.c	/^get_next_byte (void *stream)$/;"	f	file:
@@ -66,13 +66,15 @@ get_next_byte	lab1a.c	/^get_next_byte (void *stream)$/;"	f	file:
 get_next_byte	main.c	/^get_next_byte (void *stream)$/;"	f	file:
 head	command.h	/^	 struct node * head;$/;"	m	struct:queue	typeref:struct:queue::node
 input	command-internals.h	/^  char *input;$/;"	m	struct:command
-isLet	command.h	129;"	d
-isNum	command.h	128;"	d
+isLet	command.h	130;"	d
+isNum	command.h	129;"	d
 isRegular	partition.c	/^int isRegular(char input)$/;"	f
-is_word	command.h	133;"	d
+isSEQ	read-command.c	/^isSEQ(queue s) $/;"	f
+isWORDS	read-command.c	/^isWORDS(queue* s) $/;"	f
+is_word	command.h	134;"	d
 isempty	read-command.c	/^int isempty(queue q)$/;"	f
-isvWord	command.h	130;"	d
-iterator	command.h	/^	command_t iterator;$/;"	m	struct:command_stream
+isvWord	command.h	131;"	d
+iterator	command.h	/^	int iterator;$/;"	m	struct:command_stream
 key	command.h	/^	token_type key;$/;"	m	struct:pair
 lineError	partition.c	/^void lineError(int numLine)$/;"	f
 main	build_token_queue_test.c	/^int main(int argc, char** argv) {$/;"	f
@@ -83,13 +85,14 @@ malloc_cmd	read-command.c	/^malloc_cmd()$/;"	f
 memory_exhausted	alloc.c	/^memory_exhausted (int errnum)$/;"	f	file:
 next	command.h	/^	 struct node * next; $/;"	m	struct:node	typeref:struct:node::node
 next	read-command.c	/^pair* next(queue q)$/;"	f
-next_token_type	read-command.c	/^next_token_type(queue s)$/;"	f
+next_token_type	read-command.c	/^next_token_type(queue* s)$/;"	f
 node	command.h	/^struct node{$/;"	s
 output	command-internals.h	/^  char *output;$/;"	m	struct:command
 pair	command.h	/^typedef struct pair {$/;"	s
 pair	command.h	/^} pair;$/;"	t	typeref:struct:pair
 partition	partition.c	/^queue partition(char* input)$/;"	f
-prefix_traversal	read-command.c	/^queue prefix_traversal(queue Q, command_t cmd) {$/;"	f
+prefix_traversal	read-command.c	/^command_t* prefix_traversal(command_t root, int *i)$/;"	f
+prefix_traversal_helper	read-command.c	/^command_t* prefix_traversal_helper(command_t* Q, command_t cmd, int *cap, int *i) {$/;"	f
 print_command	print-command.c	/^print_command (command_t c)$/;"	f
 print_queue	build_token_queue_test.c	/^queue print_queue(queue Q) {$/;"	f
 printf_command	build_token_queue_test.c	/^void printf_command(command_t cmd, int indent) {$/;"	f
@@ -107,10 +110,13 @@ read_subshell	read-command.c	/^read_subshell(queue *s) $/;"	f
 root	command.h	/^	command_t root;$/;"	m	struct:command_stream
 script_name	lab1a.c	/^static char const *script_name;$/;"	v	file:
 script_name	main.c	/^static char const *script_name;$/;"	v	file:
+size	command.h	/^	 unsigned int size;$/;"	m	struct:queue
+size	command.h	/^	int size;$/;"	m	struct:command_stream
 status	command-internals.h	/^  int status;$/;"	m	struct:command
 subshell_command	command-internals.h	/^    struct command *subshell_command;$/;"	m	union:command::__anon1	typeref:struct:command::__anon1::command
 tail	command.h	/^	 struct node * tail;$/;"	m	struct:queue	typeref:struct:queue::node
 test_andor_command	build_token_queue_test.c	/^void test_andor_command(char* argv) {$/;"	f
+test_command_stream_t	build_token_queue_test.c	/^void test_command_stream_t(char* argv) {$/;"	f
 test_comment	build_token_queue_test.c	/^void test_comment(char* argv) {$/;"	f
 test_eatspace	build_token_queue_test.c	/^void test_eatspace(const char* argv) {$/;"	f
 test_eatspecial	build_token_queue_test.c	/^void test_eatspecial(char* argv) {$/;"	f
@@ -125,12 +131,11 @@ test_simple_command	build_token_queue_test.c	/^void test_simple_command(char* ar
 token	command.h	/^typedef char* token;$/;"	t
 token_type	command.h	/^  } token_type;$/;"	t	typeref:enum:token_type
 token_type	command.h	/^typedef enum token_type $/;"	g
-traversal	command.h	/^	queue (*traversal) (command_t, queue);$/;"	m	struct:command_stream
 true	command.h	12;"	d
 type	command-internals.h	/^  enum command_type type;$/;"	m	struct:command	typeref:enum:command::command_type
 u	command-internals.h	/^  } u;$/;"	m	struct:command	typeref:union:command::__anon1
 usage	lab1a.c	/^usage (void)$/;"	f	file:
 usage	main.c	/^usage (void)$/;"	f	file:
-value	command.h	/^	 void* value;$/;"	m	struct:node
+value	command.h	/^	 pair* value;$/;"	m	struct:node
 value	command.h	/^	char* value;$/;"	m	struct:pair
 word	command-internals.h	/^    char **word;$/;"	m	union:command::__anon1

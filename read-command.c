@@ -1,4 +1,4 @@
-// UCLA CS 111 Lab 1 command reading
+// UCLA CS 111 Lab 1 command reading;
 
 #include "command.h"
 #include "command-internals.h"
@@ -26,31 +26,65 @@ unsigned int _line = 0;
  * 		not modify the command_stream
  */
 token_type 
-next_token_type(queue s)
+next_token_type(queue* s)
 {
-	while(next(s) != NULL) {
-		if(((pair*)next(s))->key == BACK_SLASH) {
+	if(isempty(*s) == false)
+		return next(*s)->key;
+	else
+	{
+		return END_OF_FILE;
+	}
+	
+	/*
+	while(next(*s) != NULL) {
+		
+		if(next(*s)->key == BACK_SLASH || next(*s)->key == NEW_LINE) {
 			_line++;
-			s = destroy(s);
-		}
-		else if(((pair*)next(s))->key == NEW_LINE) {
-			_line++;
-			s = destroy(s);
+			*s = destroy(*s);
 		}
 		else
-			return ((pair*)next(s))->key;
+			return ((pair*)next(*s))->key;
 	}
-	return UNKNOWN;
+	return END_OF_LINE;
+	*/
+}
+
+bool 
+isWORDS(queue* s) 
+{
+	while(next(*s) != NULL) {
+		
+		if(next(*s)->key == BACK_SLASH) {
+			_line++;
+			*s = destroy(*s);
+		}
+		else if(next(*s)->key == NEW_LINE) {
+			next(*s)->key = SEQ;
+			return false;
+		}
+		else
+			return (((pair*)next(*s))->key == WORD);
+	}
+	return false;
+}
+void eat_newline(queue *s) {
+	while(next(*s) != NULL && next(*s)->key == NEW_LINE) {
+		_line++;
+		*s = destroy(*s);
+	}
 }
 
 bool
-isSEQ(queue s) 
+isSEQ(queue *s) 
 {
 	token_type type;
-	if(next(s) != NULL) {
-		type = ((pair*)next(s))->key;
-		if(type == NEW_LINE || type == SEQ)
+	if(next(*s) != NULL) {
+		type = ((pair*)next(*s))->key;
+		if(type == SEQ) {
+			*s = destroy(*s);
 			return true;
+		}
+
 	}
 	return false;
 
@@ -100,21 +134,37 @@ read_seq(command_t holder, queue *s)
 		// read first command, this will be the left child of node if 
 		// number of commands in pipeline is more than one
 		command_t cur = read_andor(NULL, s);
+		// empty command
+		if(cur == NULL)
+			lineError(_line);
 		return read_seq(cur, s);
 	}
 	 
 	command_t cmd;
 	// end of pipeline
-	if(isSEQ(*s) != SEQ)		
+	if(isSEQ(s) == false){
+		if(holder->type != SEQUENCE_COMMAND) {
+			// print uses
+			// it will return pipeline/andor/simple command if
+			// this is removed, however, read command requires
+			// sequence type as root of tree
+			cmd = malloc_cmd();
+			cmd->type = SEQUENCE_COMMAND;
+			cmd->u.command[0] = holder;
+			return cmd;
+		}
 		return holder;
+	}
 	// allocate memory for current pipeline command
 	else  								
 	{ 
-		*s = destroy(*s);
 		cmd = malloc_cmd();
 	}
 
 	// assign left and right child, left associative
+	// read_andor will return NULL if it reaches the end of command
+	// and the command is end with ';'
+	// the result will same as the if statement above
 	cmd->type = SEQUENCE_COMMAND;
 	cmd->u.command[0] = holder;
 	cmd->u.command[1] = read_andor(NULL, s);
@@ -140,7 +190,7 @@ command_t
 read_subshell(queue *s) 
 {
 	command_t cmd = malloc_cmd();
-	if(next_token_type(*s) == LB)
+	if(next_token_type(s) == LB)
 	{	
 		// build subshell
 		cmd->type = SUBSHELL_COMMAND;
@@ -148,17 +198,17 @@ read_subshell(queue *s)
 		cmd->u.subshell_command = read_seq(NULL, s);
 		
 		// match right shell
-		if(next_token_type(*s) == RB)	{
+		if(next_token_type(s) == RB)	{
 			*s = destroy(*s);	
 			return cmd;
 		}
 		else
-			error(1,0, "invalid subshell format: right bracket is not found");
+			lineError(_line);
 	}
 	else
-		error(1,0, "invalid subshell format: left bracket is not found");
+		lineError(_line);
 
-  return 0;
+  return NULL;
 }
 
 /**
@@ -177,15 +227,16 @@ read_subshell(queue *s)
 command_t 
 read_simple_command( queue *s) 
 {
+	eat_newline(s);
 	if (isempty(*s)) {
-		lineError(_line);
+		return NULL;
 	}
 	
 	command_t cmd = malloc_cmd();
 	int n = 0;
 	queue words = q_empty();
 
-	while(next_token_type(*s) == WORD)
+	while(isWORDS(s))
 	{
 		words = enqueue(b_pair(next(*s)->key, next(*s)->value), words);
 		*s = dequeue(*s);
@@ -205,14 +256,14 @@ read_simple_command( queue *s)
 			words = dequeue(words);
 		}
 
-		token_type type = next_token_type(*s);
+		token_type type = next_token_type(s);
 		if(type == IN)
 		{
 			*s = destroy(*s);
 			char* in = next(*s)->value;
 			cmd->input = in;
 			*s = dequeue(*s);
-			type = next_token_type(*s);;
+			type = next_token_type(s);;
 			if(type == OUT)
 			{
 				*s = destroy(*s);
@@ -227,7 +278,7 @@ read_simple_command( queue *s)
 			char* out = next(*s)->value;
 			cmd->output = out;
 			*s = dequeue(*s);
-			type = next_token_type(*s);
+			type = next_token_type(s);
 			if(type == IN)
 			{
 				*s = destroy(*s);
@@ -236,17 +287,23 @@ read_simple_command( queue *s)
 				*s = dequeue(*s);
 			}
 		}
+
+		type = next_token_type(s);
+		if(type == NEW_LINE)
+			next(*s)->key = SEQ;
+			
+		cmd->u.word[n] = NULL;
+		/*
 		cmd->u.word[n] = (char*) checked_malloc(1);
 		strcpy(cmd->u.word[n], "\0");
+		*/
 		return cmd;
 			
 	}	
 	else 
 	{
-		//TODO throw exception
-		return NULL;
+		lineError(_line);
 	}
-		
 }
 
 
@@ -272,14 +329,16 @@ read_pipeline(command_t holder, queue* s)
 		// read first command, this will be the left child of node if 
 		// number of commands in pipeline is more than one
 		command_t cur = read_simple_command(s);
+		if(cur == NULL)
+			return NULL;
 		return read_pipeline(cur, s);
 	}
 	 
 	command_t cmd;
 	// end of pipeline
-	if(next_token_type(*s) != PIPE)		
+	if(next_token_type(s) != PIPE)		
 		return holder;
-	
+
 	// allocate memory for current pipeline command
 	*s = dequeue(*s);
 	cmd = malloc_cmd();
@@ -311,27 +370,31 @@ read_andor(command_t holder, queue *s)
 	// beginning of current complete command
 	if( holder == NULL) 
 	{
-		token_type t = next_token_type(*s);
+		token_type t = next_token_type(s);
 		command_t cur;
 		// read subshell command if ( is reached
-		if(t == LB)
+		if(t == LB) 
 			cur = read_subshell(s);
+		
 		// read pipeline command otherwise
 		else
+		{
 			cur = read_pipeline(NULL, s);
+			if(cur == NULL)
+				return NULL;
+		}
 		// build tree
 		return read_andor(cur, s);
 	}
 	else { 
 		command_t cmd;
 		// get type of next token, will not modified stream
-		token_type ttype = next_token_type(*s);
+		token_type ttype = next_token_type(s);
 		
 		// end of current complete command 
 		if(ttype != OR && ttype != AND)		
 			return holder;
 		// allocate memory for cmd and remove first token {|| &&}
-			
 		*s = dequeue(*s);
 		cmd = malloc_cmd();
 		if(ttype == OR)
@@ -340,52 +403,64 @@ read_andor(command_t holder, queue *s)
 			cmd->type = AND_COMMAND;
 		
 		// OR COMMAND
-		if(next_token_type(*s) == OR)			cmd->type = OR_COMMAND;
+		if(next_token_type(s) == OR)			cmd->type = OR_COMMAND;
 		// AND COMMAND
-		else if( next_token_type(*s) == AND)		cmd->type = AND_COMMAND;
+		else if( next_token_type(s) == AND)		cmd->type = AND_COMMAND;
 
 		cmd->u.command[0] = holder;
-		if(next_token_type(*s) == LB)
+		if(next_token_type(s) == LB)
 			cmd->u.command[1] = read_subshell(s);
 		cmd->u.command[1] = read_pipeline(NULL, s);
+		// error if || or && is shown but nothing after that
+		if(cmd->u.command[1] == NULL)
+			lineError(_line);
 		// left associtive
 		return read_andor(cmd, s);
 
 	}
 }
 
-command_t* prefix_traversal(queue* Q, command_t cmd, int *i) {
-	/*
+command_t* prefix_traversal_helper(command_t* Q, command_t cmd, int *cap, int *i) {
+	if(*i + 4 >= *cap)
+		Q = (command_t*)checked_grow_alloc(Q, (unsigned*)cap);
+
 	if(cmd == NULL)
-		lineError(-1);
+		lineError(-1);			// not possible to happen, but it has happened
 	if(cmd->type != SEQUENCE_COMMAND) 
 		return Q;
 	else
 	{
-		Q = prefix_traversal(Q, cmd->u.command[0], i);
-		Q = enqueue((void*)cmd, Q);
-		Q = prefix_traversal(Q, cmd->u.command[1]);
+		Q = prefix_traversal_helper(Q, cmd->u.command[0], cap, i);
+		if(cmd->u.command[1] == NULL)
+			Q[(*i)++] = cmd->u.command[0];
+		else {
+			Q[(*i)++] = cmd;
+			Q = prefix_traversal_helper(Q, cmd->u.command[1], cap, i);
+		}
 	}
 	return Q;
-	*/
-	return NULL;
 }
 
-command_stream_t build_token_tree(queue Q, command_t* (*traversal) (queue*, command_t, int*)) {
-	/*
-	command_stream_t cmd_stream = (command_stream_t)checked_malloc(sizeof(struct command_stream));
-	cmd_stream->root = read_seq(NULL, &Q);
-	cmd_stream->iterator = cmd_stream->root;
-	cmd_stream->command_queue = q_empty();
-	cmd_stream->traversal = traversal; 
-	queue command_queue = q_empty();
-	command_queue = traversal(command_queue, cmd_stream->root);
-	int i = 0;
-	cmd_stream.command_queue = (command_t*)checked_malloc(sizeof(command_t) * n);
+command_t* prefix_traversal(command_t root, int *i)
+{
+	int cap = 10;
+	*i = 0;
+	command_t* cmd_queue = (command_t*)checked_malloc(sizeof(command_t) * cap);
+	return prefix_traversal_helper(cmd_queue, root, &cap, i);
 
+}
+
+command_stream_t build_token_tree(queue Q) {
+
+	command_stream_t cmd_stream = (command_stream_t)checked_malloc(sizeof(struct command_stream));
+
+	cmd_stream->root = read_seq(NULL, &Q);
+	if(isempty(Q) == false)  
+		lineError(_line);
+
+	cmd_stream->iterator = 0;
+	cmd_stream->command_queue = prefix_traversal(cmd_stream->root, &cmd_stream->size);
 	return cmd_stream;
-	*/
-	return NULL;
 }
 
 command_stream_t
@@ -409,16 +484,16 @@ make_command_stream (int (*get_next_byte) (void *),
 	queue Q;
 	Q = partition(buffer);
 	free(buffer);
-	command_stream_t T = build_token_tree(Q, prefix_traversal);
+	command_stream_t T = build_token_tree(Q);
 	return T;
 }
 
 command_t
 read_command_stream (command_stream_t s)
 {
-	//command_t cmd = next(s->command_queue);
-  error (1, 0, "command reading not yet implemented");
-  return 0;
+	if(s->iterator < s->size)
+		return s->command_queue[s->iterator++];
+	return NULL;
 }
 
 /********************************************/

@@ -49,7 +49,8 @@ typedef enum token_type
 	COMMENT, // #
 	NEW_LINE,
 	BACK_SLASH,
-	UNKNOWN
+	END_OF_FILE,
+	SEQ_ENTER
   } token_type;
 typedef char* token;
 
@@ -142,10 +143,14 @@ void lineError(int numLine);
 struct command_stream {
 	
 	command_t root;
-	command_t iterator;
+	int iterator;
 
 	command_t* command_queue;
-	command_t* (*traversal) (queue, command_t);
+	int size;
+
 };
+//TODO delete
+command_stream_t
+build_token_tree(queue);
 
 #endif
