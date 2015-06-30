@@ -92,8 +92,14 @@ void lineError(const char*);
 token_type 
 next_token_type(queue* s)
 {
-	if(isempty(*s) == false)
+	while(isempty(*s) == false && next(*s)->key == BACK_SLASH) {
+		_line++;
+		*s = destroy(*s);
+	}
+
+	if(isempty(*s) == false) {
 		return next(*s)->key;
+	}
 	else
 	{
 		return END_OF_FILE;
@@ -124,6 +130,7 @@ isWORDS(queue* s)
 		// appear before or after < >, therefore, the only situation
 		// this reaches NEW_LINE is it is a sequence separator
 		else if(next(*s)->key == NEW_LINE) {
+			_line++;
 			next(*s)->key = SEQ;
 			return false;
 		}
@@ -221,7 +228,8 @@ malloc_cmd()
 command_t 
 read_seq(command_t holder, queue *s)
 {
-	//
+	eat_newline(s);
+	
 	// beginning of current pipeline 
 	if( holder == NULL) 
 	{
@@ -242,27 +250,26 @@ read_seq(command_t holder, queue *s)
 			// it will return pipeline/andor/simple command if
 			// this is removed, however, read command requires
 			// sequence type as root of tree
-			cmd = malloc_cmd();
-			cmd->type = SEQUENCE_COMMAND;
-			cmd->u.command[0] = holder;
-			return cmd;
+			return holder;
 		}
 		return holder;
 	}
 	// allocate memory for current pipeline command
 	else  								
 	{ 
+		// assign left and right child, left associative
+		// right child will be NULL if it reaches the end of command
+		// and the command is end with ';'
+		// the result will same as the if statement above
+		command_t cmd_t =read_andor(NULL, s);
+		if(cmd_t == NULL)
+			return holder;
 		cmd = malloc_cmd();
+		cmd->type = SEQUENCE_COMMAND;
+		cmd->u.command[0] = holder;
+		cmd->u.command[1] = cmd_t; 
+		return read_seq(cmd, s);
 	}
-
-	// assign left and right child, left associative
-	// right child will be NULL if it reaches the end of command
-	// and the command is end with ';'
-	// the result will same as the if statement above
-	cmd->type = SEQUENCE_COMMAND;
-	cmd->u.command[0] = holder;
-	cmd->u.command[1] = read_andor(NULL, s);
-	return read_seq(cmd, s);
 
 }
 
@@ -300,6 +307,7 @@ read_subshell(queue *s)
 		if(next_token_type(s) == RB)	{
 			*s = destroy(*s);	
 			if(next_token_type(s) == NEW_LINE) {
+				_line++;
 				next(*s)->key = SEQ;
 			}
 			return cmd;
@@ -334,6 +342,7 @@ read_subshell(queue *s)
 command_t 
 read_pipeline(command_t holder, queue* s) 
 {
+	eat_newline(s);
 	// beginning of current pipeline 
 	if( holder == NULL) 
 	{
@@ -388,6 +397,7 @@ read_pipeline(command_t holder, queue* s)
 command_t 
 read_andor(command_t holder, queue *s) 
 {
+	eat_newline(s);
 	// beginning of current complete command
 	if( holder == NULL) 
 	{
@@ -442,7 +452,8 @@ read_andor(command_t holder, queue *s)
 		// read subshell if ( occur, it will return NULL if expcetion 
 		if(next_token_type(s) == LB)
 			cmd->u.command[1] = read_subshell(s);
-		cmd->u.command[1] = read_pipeline(NULL, s);
+		else
+			cmd->u.command[1] = read_pipeline(NULL, s);
 		// error if || or && is shown but nothing after that
 		// ie: cat a ||;
 		if(cmd->u.command[1] == NULL)
@@ -1104,8 +1115,10 @@ read_simple_command( queue *s)
 		// and can only appear after || && |, therefore if the \n is appended
 		// at the end of simple command, it is the end of seq 
 		type = next_token_type(s);
-		if(type == NEW_LINE)
+		if(type == NEW_LINE) {
+			_line++;
 			next(*s)->key = SEQ;
+		}
 			
 		// print function is detect NULL pointer as end of **word
 		cmd->u.word[n] = NULL;

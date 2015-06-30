@@ -1,17 +1,23 @@
-hanges not staged for commit:
+changes not staged for commit:
 
-	modified:   mytestcase.sh
 	modified:   read-command.c
 
-[BUG] subshell at the end of input stream, and a newline character
-	  after subshell. read_seq can not detect the newline token. 
-[FIXED] if the token after right bracket is NEW_LINE, change its
-		type to SEQ. the possible token after subshell are || &&
-		; NL, but new_line can not appear before || and &&. therfore
-		if NL is appearred, it seem as sequence token.
-[BUG EXAMPLE]
-		(sort < a | cat b - | tr A-Z a-z > c
-		 sort -k2 d - < a | uniq -c > e
-	     diff a c > f)
-	   
+[BUG] can not ignore BACK_SLASH
+[FIXED] 92: add while loop in next_token_type to eat/ignore all backslash
 
+[BUG] wrong value of error line
+[FIXED] 124,300,1104: increase _line after NEW_LINE before it changes type from NEW_LINE to SEQ.
+
+[BUG] return seq command with NULL right child which causes print 
+		funtion can not read inside of subshell
+[FIXED] 242: return left child rather than return a seq command that
+		    has a Null right child, because prefix traversal function 
+			will link all non-sequence command; therefore, fixing this
+			problem will not affect other things.
+
+[BUG] throw empty command exception if subshell is preceded by multiple
+		new_line character(or multiple new_line after special token shou		ld not work too)
+[FIXED] 221,334,388: eat new_line at beginning of each read function
+
+[BUG] subshell is disappear
+[FIXED] 442:forgot else command....
