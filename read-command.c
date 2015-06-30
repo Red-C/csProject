@@ -299,6 +299,9 @@ read_subshell(queue *s)
 		// match right shell
 		if(next_token_type(s) == RB)	{
 			*s = destroy(*s);	
+			if(next_token_type(s) == NEW_LINE) {
+				next(*s)->key = SEQ;
+			}
 			return cmd;
 		}
 		else
