@@ -1,0 +1,17 @@
+hanges not staged for commit:
+
+	modified:   mytestcase.sh
+	modified:   read-command.c
+
+[BUG] subshell at the end of input stream, and a newline character
+	  after subshell. read_seq can not detect the newline token. 
+[FIXED] if the token after right bracket is NEW_LINE, change its
+		type to SEQ. the possible token after subshell are || &&
+		; NL, but new_line can not appear before || and &&. therfore
+		if NL is appearred, it seem as sequence token.
+[BUG EXAMPLE]
+		(sort < a | cat b - | tr A-Z a-z > c
+		 sort -k2 d - < a | uniq -c > e
+	     diff a c > f)
+	   
+
