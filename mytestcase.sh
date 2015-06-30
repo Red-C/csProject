@@ -1,1 +1,2 @@
-a||(a)
+((skfgk||haha)||
+(hhh&&hhh))

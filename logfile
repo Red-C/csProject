@@ -2,22 +2,12 @@ changes not staged for commit:
 
 	modified:   read-command.c
 
-[BUG] can not ignore BACK_SLASH
-[FIXED] 92: add while loop in next_token_type to eat/ignore all backslash
+[BUG] can not identify left bracket after || && if there is a new_line
+		in between
+	  ie:   (a||b)||
+	  			(c||d)   
+			the second left bracket will not read, which causes empty
+			simple command error
+[FIXED] read_andor 454: add eat_newline before detect second part of 
+		and command
 
-[BUG] wrong value of error line
-[FIXED] 124,300,1104: increase _line after NEW_LINE before it changes type from NEW_LINE to SEQ.
-
-[BUG] return seq command with NULL right child which causes print 
-		funtion can not read inside of subshell
-[FIXED] 242: return left child rather than return a seq command that
-		    has a Null right child, because prefix traversal function 
-			will link all non-sequence command; therefore, fixing this
-			problem will not affect other things.
-
-[BUG] throw empty command exception if subshell is preceded by multiple
-		new_line character(or multiple new_line after special token shou		ld not work too)
-[FIXED] 221,334,388: eat new_line at beginning of each read function
-
-[BUG] subshell is disappear
-[FIXED] 442:forgot else command....

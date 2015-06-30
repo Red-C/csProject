@@ -96,7 +96,6 @@ next_token_type(queue* s)
 		_line++;
 		*s = destroy(*s);
 	}
-
 	if(isempty(*s) == false) {
 		return next(*s)->key;
 	}
@@ -425,7 +424,7 @@ read_andor(command_t holder, queue *s)
 		return read_andor(cur, s);
 	}
 	else { 
-	
+		
 		command_t cmd;
 
 		token_type ttype = next_token_type(s);
@@ -447,7 +446,13 @@ read_andor(command_t holder, queue *s)
 		else
 			cmd->type = AND_COMMAND;
 		
-		
+		// have to eat new line here
+		// ie: ((a)||
+		//      (b))
+		// next_token_type will be \n
+		// which will not get into the read_subshell command
+		eat_newline(s);	
+
 		cmd->u.command[0] = holder;
 		// read subshell if ( occur, it will return NULL if expcetion 
 		if(next_token_type(s) == LB)
