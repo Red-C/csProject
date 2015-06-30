@@ -855,6 +855,7 @@ queue partition(char* input)
   char* current = input;
   int Status_comment = 0, Status_backslash = 0;
   int len = 0;
+  int newLine = 1;
   _line = 1;
 
   char* tmpStr = (char*)checked_malloc(3*strlen(input)*sizeof(char));
@@ -869,7 +870,7 @@ queue partition(char* input)
       switch(*current)
         {
 	case '#':
-	  if(isRegular(*(current + 1)))
+	  if(!newLine)
 	    strcat(tmpStr, "#");
 	  else
 	    Status_comment = 1;
@@ -961,7 +962,8 @@ queue partition(char* input)
 	  else
 	    lineError("invalid token");
         }
-
+	  newLine = (*current == '\n')? 1 :
+		  			(*current == ' ' || *current == '\t')? newLine : 0;
       current++;
     }
 
