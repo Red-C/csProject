@@ -1,4 +1,5 @@
 This is a skeleton for CS 111 Lab 1.
 
-Replace this README file with notes on your implementation.
-Mentions any special features or limitations.
+we tested lots of different testcase, and fixed the bug if it is appeared. The only limitation is the input have to follow the syntax rules. However, there are memory leaking in the program, because the 
+lab1a and 1c might use those data. I already label in the comments
+when I allocate memory, and I will free them after lab1a or 1c.
