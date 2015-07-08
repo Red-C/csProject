@@ -14,6 +14,7 @@
 
 int execute_simple_command ( command_t c);
 int execute_pipe_command ( command_t c);
+int execute_andor_command( command_t c);
 
 int
 command_status (command_t c)
@@ -44,7 +45,8 @@ execute_command (command_t c, int time_travel)
 			;
 	}
 	*/
-	int flag = execute_pipe_command(c);
+	int exit_status = execute_andor_command(c);
+	printf("exit status: %d\n", exit_status);
 	if(c->status != 0)
 		error(0,1,"command execute unsuccessful");
 }
@@ -210,12 +212,12 @@ int execute_andor_command(command_t c) {
 		command_t right = c->u.command[1];
 		if(c->type == AND_COMMAND) 
 		{
-			return !((c->status = execute_andor_command(left)) == 0) 
-				&& ((c->status = execute_andor_command(right)) == 0);
+			return !(((c->status = execute_andor_command(left)) == 0) 
+				&& ((c->status = execute_andor_command(right)) == 0));
 		}
 		else
-			return !((c->status = execute_andor_command(left)) == 0) 
-				|| ((c->status = execute_andor_command(right)) == 0);
+			return !(((c->status = execute_andor_command(left)) == 0) 
+				|| ((c->status = execute_andor_command(right)) == 0));
 		
 	}
 }

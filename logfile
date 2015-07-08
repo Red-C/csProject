@@ -2,6 +2,8 @@ changes not staged for commit:
 
 	modified:   execute-command.c
 	
-	please test pipeline command.
+	please write testcase for program
 
-	andor and command sequence has not finished.
+	[finished] execute multiple complete commands in sequence.
+
+	
