@@ -1,15 +1,399 @@
-changes not staged for commit:
+commit e7055172627151d6af470f784941285a07d1b71b
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Wed Jul 8 01:18:00 2015 -0700
 
-	modified:   execute-command.c
+    changes not staged for commit:
+    
+    	modified:   execute-command.c
+    
+    	[BUG] cannot open commands that not output to stdout(vim, less)
+    			because execute pipe redirect output of command to write side
+    			of pipe, which causes commands such as vim and less can not
+    			output their UI to the place they want.
+    	[FIXED] execute_command.c 236: this can be optimized, add a parameter
+    			to execute_pipe_helper to indicate the top level of pipe
+    			command do not redirect the output to the pipe. if commands
+    			such as less is in middle of pipe, it will not open the
+    			UI.
 
-	[BUG] cannot open commands that not output to stdout(vim, less)
-			because execute pipe redirect output of command to write side
-			of pipe, which causes commands such as vim and less can not
-			output their UI to the place they want.
-	[FIXED] execute_command.c 236: this can be optimized, add a parameter 
-			to execute_pipe_helper to indicate the top level of pipe 
-			command do not redirect the output to the pipe. if commands
-			such as less is in middle of pipe, it will not open the 
-			UI.
-	
+commit b5ab4b1ae39013d73fb5136c6f03e0aee3891521
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Wed Jul 8 00:46:57 2015 -0700
 
+    changes not staged for commit:
+    
+    	modified:   execute-command.c
+    	modified:   read-command.c
+    
+    	[finished] lab1b
+    
+    	please test in next commit:
+    		simple command
+    		pipe command (one or more in sequence)
+    		and or command ( one or more in sequence)
+    		multiple complete command
+    		command with white splace( one or more white splace)
+    		command with backslash( one or more backslash)
+    		complete commands with subshell
+    		complete commands with complex subshell
+    		complete commands with next subshell
+    
+    		error command with all situation above
+    
+    	test command:
+    		make
+    		./timetrash -p test_case    # print tree
+    		./timetrash -t test_case 	# execute tree
+    
+    	[NOTES] history is not working because the bash file is not link under
+    	sys.
+    
+    	[BUG] empty simple command if new_line before right bracket
+    		  read_command.c: read simple changes the type of the
+    	new_line before right bracket to SEQ, which causes read_simple_command
+    	detect next token is not a word and the queue is not empty; therefore,
+    	throw exception.
+    	[FIXED] read_command.c 1043: return null if queue is empty or next
+    	token is RB, next token is RB means the subshell command tree is
+    	completed.
+
+commit f4aa603ac0b1fbf0a6796f60cb89249f08f0579e
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Tue Jul 7 22:19:30 2015 -0700
+
+    changes not staged for commit:
+    
+    	modified:   execute-command.c
+    
+    	please write testcase for program
+    
+    	[finished] execute multiple complete commands in sequence.
+
+commit 9374974e87b901164f3d805effed4ca90dca3ff8
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Tue Jul 7 21:59:24 2015 -0700
+
+    changes not staged for commit:
+    
+    	modified:   execute-command.c
+    
+    	please test pipeline command.
+    
+    	andor and command sequence has not finished.
+
+commit 4f77089b5082850c9d75e2f92dcbf12deaadb3ae
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Thu Jul 2 13:19:02 2015 -0700
+
+    add README
+
+commit e5abe02c7e8c651cecb6ad7cb4d67edb7d834347
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Thu Jul 2 13:00:04 2015 -0700
+
+    final version before upload
+
+commit a9428d8e79411e5ea9d8f11c97659f564f88a48d
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Tue Jun 30 13:24:22 2015 -0700
+
+    changes not staged for commit:
+    
+    	modified:   read-command.c
+    
+    [BUG] can not identify left bracket after || && if there is a new_line
+    		in between
+    	  ie:   (a||b)||
+    	  			(c||d)
+    			the second left bracket will not read, which causes empty
+    			simple command error
+    [FIXED] read_andor 454: add eat_newline before detect second part of
+    		and command
+
+commit 12fbc934b049e59633e5e088654579c8613231fa
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Mon Jun 29 23:04:37 2015 -0700
+
+    [bug] command doesn't solved correctly, partition modified.
+
+commit 046f9a46a53624037b8e495e47a3f01513aff12a
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Mon Jun 29 22:37:34 2015 -0700
+
+    changes not staged for commit:
+    
+    	modified:   read-command.c
+    
+    [BUG] can not ignore BACK_SLASH
+    [FIXED] 92: add while loop in next_token_type to eat/ignore all backslash
+    
+    [BUG] wrong value of error line
+    [FIXED] 124,300,1104: increase _line after NEW_LINE before it changes type from NEW_LINE to SEQ.
+    
+    [BUG] return seq command with NULL right child which causes print
+    		funtion can not read inside of subshell
+    [FIXED] 242: return left child rather than return a seq command that
+    		    has a Null right child, because prefix traversal function
+    			will link all non-sequence command; therefore, fixing this
+    			problem will not affect other things.
+    
+    [BUG] throw empty command exception if subshell is preceded by multiple
+    		new_line character(or multiple new_line after special token shou		ld not work too)
+    [FIXED] 221,334,388: eat new_line at beginning of each read function
+    
+    [BUG] subshell is disappear
+    [FIXED] 442:forgot else command....
+
+commit de3e055321cdb7ea40cec1dd0eaa8c007ecffbc7
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Mon Jun 29 20:21:10 2015 -0700
+
+    hanges not staged for commit:
+    
+    	modified:   mytestcase.sh
+    	modified:   read-command.c
+    
+    [BUG] subshell at the end of input stream, and a newline character
+    	  after subshell. read_seq can not detect the newline token.
+    [FIXED] if the token after right bracket is NEW_LINE, change its
+    		type to SEQ. the possible token after subshell are || &&
+    		; NL, but new_line can not appear before || and &&. therfore
+    		if NL is appearred, it seem as sequence token.
+    [BUG EXAMPLE]
+    		(sort < a | cat b - | tr A-Z a-z > c
+    		 sort -k2 d - < a | uniq -c > e
+    	     diff a c > f)
+
+commit 32ea71866ef83dbb826428e0e5ef44070ce61034
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Mon Jun 29 20:19:10 2015 -0700
+
+    hanges not staged for commit:
+    
+    	modified:   mytestcase.sh
+    	modified:   read-command.c
+    
+    [BUG] subshell at the end of input stream, and a newline character
+    	  after subshell. read_seq can not detect the newline token.
+    [FIXED] if the token after right bracket is NEW_LINE, change its
+    		type to SEQ. the possible token after subshell are || &&
+    		; NL, but new_line can not appear before || and &&. therfore
+    		if NL is appearred, it seem as sequence token.
+    [BUG EXAMPLE]
+    		(sort < a | cat b - | tr A-Z a-z > c
+    		 sort -k2 d - < a | uniq -c > e
+    	     diff a c > f)
+
+commit 5af173350c5ca057ee614bea937536c3e279d207
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Mon Jun 29 15:15:25 2015 -0700
+
+    HEAD detached from 3ca8e90
+    Changes not staged for commit:
+    
+    		modified:   command.h
+    		modified:   mytestcase.sh
+    		modified:   read-command.c
+    
+    [PASSED] test-p-bad.sh
+    [PASSED] test-p-ok.sh
+    [XXXXXX] have not test subshell yet
+    
+    next commit: might be more optimize, there are many TODO can be done in read-command.c
+    
+    lab1a finished.
+    
+    3:14pm jun 29.  commited by hong
+
+commit 813cd73603dd722cfa826d27508e974a04b86182
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Mon Jun 29 12:19:39 2015 -0700
+
+    all test passed 12:18pm june29 by hong [optimizecode in next commit]
+
+commit 77c2314d1de5510876132e939f33115b641b429d
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Mon Jun 29 05:26:13 2015 -0700
+
+    HEAD detached from 3ca8e90
+    Changes to be committed:
+      (use "git reset HEAD <file>..." to unstage)
+    
+    	new file:   build_token_queue_test.c
+    	renamed:    mytestcase.sh
+    	new file:   partition.c
+    
+    Changes not staged for commit:
+      (use "git add <file>..." to update what will be committed)
+      (use "git checkout -- <file>..." to discard changes in working directory)
+    
+    	modified:   read-command.c
+    	modified:   tags
+    
+    [PASSED]mytestcase.sh
+    
+    added files:
+    ===============================================================
+    build_token_queue_test.c testcase includes
+    	opt:    function:
+    	h		test_simple_command
+    	i		test_pipeline_command
+    	j		test_andor_command
+    	k		test_seq_command
+    	l		test_command_stream_t
+    	p		test_print_queue
+    compile:
+    gcc -ggdb -o token_queue_test build_token_queue_test.c read-command.c alloc.c partition.c print-command.c
+    input format:
+    ./token_queue <opt> < INPUT_FILE
+    ./token_queue <opt> "write command here"
+    ===============================================================
+    
+    ===============================================================
+    NEXT_COMMIT:
+    make
+    test test_ok.sh
+    test test_bad.sh
+    documentation
+    ===============================================================
+    
+    ===============================================================
+    BUG:
+    	line 425: prefix_traversal_helper function, when I used checked_grow_alloc() function, the capacity
+    	doubled, and memory allocated successful; however, the value at index 5 is changed.
+    	PARTIAL FIXED: increase the initial size to 1024, which might large enough for most case.
+    
+    		GDB REPORT:::
+    	prefix_traversal_helper (Q=0x804f7d8, cmd=0x804f678, cap=0xbffff5d8, i=0x804e014) at read-command.c:427
+    		427	d*)cap);
+    		13: *i = 6
+    		12: Q[9] = (command_t) 0x0
+    		11: Q[8] = (command_t) 0x0
+    		10: Q[7] = (command_t) 0x0
+    		9: Q[6] = (command_t) 0x0
+    		8: Q[5] = (command_t) 0x19
+    		7: Q[4] = (command_t) 0x804f330
+    		6: Q[3] = (command_t) 0x804f260
+    		5: Q[2] = (command_t) 0x804e128
+    		4: Q[1] = (command_t) 0x804e098
+    		3: Q[0] = (command_t) 0x804e020
+    		2: cmd->u.word[0] = 0x0
+    		1: cmd->type = AND_COMMAND
+    ===============================================================
+
+commit 1ca8aaee40ddba874f17d39e8bf0c1273517ccf7
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Mon Jun 29 04:01:11 2015 -0700
+
+    at least this is work with my own testcase
+
+commit 730a2a7695651976b9e3ebaa0eebcf804d8d7bb0
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Sun Jun 28 20:50:25 2015 -0700
+
+    will change queue struct in next commit
+
+commit 3ca8e90cd3d0c6243ffe63f4f82b60706da65fb3
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Sun Jun 28 19:19:46 2015 -0700
+
+    will modify dequeue next commit
+
+commit 2179bb2ca22841b20e7d61290c8cfdb1b60b9c22
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Sun Jun 28 11:35:20 2015 -0700
+
+    read_seq, read_andor, read_pipeline, read_simple_command tested..  read_subshell not tested, 11:34am june 28  by hongfei
+
+commit 5a8f4efdf3cecd9c84ef0e7470dede9d65582149
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Sat Jun 27 23:53:42 2015 -0700
+
+    11:53 by hong
+
+commit c33b6628c6f60f573d00d41a64046fa98e37dcec
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Sat Jun 27 03:40:51 2015 -0700
+
+    add test file "build_token_queue_test.c"
+    		all the partial test will put in this file with distinct option code.
+    		compile command:
+    			gcc -ggdb -o token_queue_test build_token_queue_test.c read-command.c alloc.c
+    		run command format:
+    			1. cat FILE_NAME | ./token_queue_test OPTION_CODE
+    			2. ./token_queue_test OPTION_CODE "STRING"
+    
+    			OPTION_CODE:
+    				a: test queue
+    				b: test eat white space
+    				c: test isword
+    				d: test eatword
+    				e: test eat special character
+    				f: test eat comment
+    				...
+    
+    function added:
+    	typedef struct pair: for queue use
+    	char* eat_whitespace(char*): return next non-whitespace location(pointer)
+    	int eat_word(char *): return # of countinous char that is a word at current position
+    	int eat_special(char *): return # of countinous char that is a special character at current position
+    	int eat_comment(char *): return # of word after current pos until newline character if current pos is a '#'
+    	b_pair(key, value)	: build
+    	free_pair(pair) : free
+    
+    NEXT COMMIT:
+    	finish build_token_queue()
+    	finish build tree()
+    	build_token_queue can be speed up by build queue node when reading the character from stream ( we read character from stream into a char array, and build queue base on this char array, however, we have to allocate memory again which is wasting time.
+    	different solution:	add whitespace when reading character from stream, and strtok directly.
+    	maybe we can change \ \n with a special character which help us count the current line number.
+    	[I DONT WANT TO DO THIS BECAUSE THE JOB THAT I HAVE DONE FOR FIVE HOURS IS WASTED........]
+
+commit d7062e63e5ace0a6e3e2e8ac4c927062a3825aac
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Fri Jun 26 13:24:39 2015 -0700
+
+    debug a little -by hongfei 1:24pm jun 26
+
+commit 2672a1e45d22018e69d603a7860b7b9fdb86a57d
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Thu Jun 25 23:56:54 2015 -0700
+
+    add build_token_queue function	the program will read data from file into a char array and send it into build_token_queue function.	the build_token_queue function will generate a queue of tokens base on the input array.	it read and split token one by one, for example: ls -l -a -i .||cat a && b has 10 tokens	it can recognized word, special character and connect the commands that separated by \ \n			purpose: made next_token_type easier, just pop tokens one by one and insert into the tree			expect: \ \n might not workadd queue data structure	basic operation of queue, however the value of node is char*, enqueue operation will not allocate memory for 	value, the char pointer have to allocate before enqueue has called, dequeue will not free memory for value either	user have to use next() function to get the value and free yourself. TODO:	build_token_queue()	eat_whitespace()	is_whitespace()	eat_word()	is_word()	eat_special()	is_special()	next_token_type()   // parameter might be change because it will be implemented by queue	read_token()	    // just dequeue token queue	pop_token()	    // might be removed in next commit	malloc_cmd()	    // allocate memory for command strcture	allocate memory for command.word(char pointer array) maybe using strtok to split the string								 by whitespace is a good idea...							     or this can be done in build_token_queue	TEST...............................................................................june 26, 12:11AM By Hong			 # Please enter the commit message for your changes. Lines starting# with '#' will be ignored, and an empty message aborts the commit.# On branch lab1a# Your branch is up-to-date with 'origin/lab1a'.## Changes to be committed:#	new file:   .command.h.swp#	new file:   .lab1a.c.swp#	new file:   .read-command.c.swo#	new file:   .read-command.c.swp#	new file:   alloc.o#	modified:   command.h#	new file:   lab1a.c#	modified:   read-command.c#	new file:   test-p-bad.sh-5877.tmp/test0.err#	new file:   test-p-bad.sh-5877.tmp/test0.out#	new file:   test-p-bad.sh-5877.tmp/test0.sh#	new file:   test-p-ok.sh-5871.tmp/test.err#	new file:   test-p-ok.sh-5871.tmp/test.exp#	new file:   test-p-ok.sh-5871.tmp/test.out#	new file:   test-p-ok.sh-5871.tmp/test.sh#
+
+commit 3432a4977b42e76fabdc56b73ee5cdd0640728bf
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Thu Jun 25 14:07:23 2015 -0700
+
+    lab1a branch established..
+
+commit ff6efb0bcf5964a9dc091a0ecc7bfa0ef9ebb9ca
+Merge: 5959543 c931170
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Thu Jun 25 14:06:14 2015 -0700
+
+    Merge branch 'master' of github.com:Red-C/csProject
+
+commit c931170e995c53c7ca046e723c86a5b1b138710d
+Author: Red-C <hong25100@hotmail.com>
+Date:   Thu Jun 25 13:58:44 2015 -0700
+
+    Initial commit
+
+commit 5959543b39c03d76f5f1bed7eea9c3e00629d978
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Thu Jun 25 00:34:00 2015 -0700
+
+    TODO:
+    	read token have not finished.
+    	haven't decided whether limit char** word array size or implements dynamic array.
+    	thinking about analyze char buffer and put each token into a struct with two member(token_type, char*) before build the tree
+    	free memory function havn't start yet.
+    
+    	haven't debug yet.
+
+commit 74ca078c99c19716a3c12193b2babd2e13507853
+Author: Hongfei <hong25100@hotmail.com>
+Date:   Wed Jun 24 15:02:50 2015 -0700
+
+    init commit
