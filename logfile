@@ -1,13 +1,7 @@
 changes not staged for commit:
 
-	modified:   read-command.c
+	modified:   execute-command.c
+	
+	please test pipeline command.
 
-[BUG] can not identify left bracket after || && if there is a new_line
-		in between
-	  ie:   (a||b)||
-	  			(c||d)   
-			the second left bracket will not read, which causes empty
-			simple command error
-[FIXED] read_andor 454: add eat_newline before detect second part of 
-		and command
-
+	andor and command sequence has not finished.
