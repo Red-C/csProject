@@ -116,14 +116,17 @@ execute_simple_command ( command_t c)
  * 		state.
  *
  */
-int execute_pipe_helper(command_t c)
+int execute_pipe_helper(command_t c, int i)
 {
+	
 	// create pipe between parent and child
 	int fds[2];
 	pipe(fds);
 	if(pipe(fds) == -1)
 		error(0,1,"pipe error");
 
+	if(i == 0)
+		dup2(1,fds[1]);
 	// end of recursion, the most left child of tree
 	if(c->type != PIPE_COMMAND) {
 		// end of recursion
@@ -149,7 +152,7 @@ int execute_pipe_helper(command_t c)
 			int status = 0;
 			// waiting for child process exit
 			while(wait(&status) != pid)
-				   ;
+				printf("waiting..");
 			c->status = status;
 			close(fds[1]);
 			if(c->status != 0) {
@@ -166,7 +169,7 @@ int execute_pipe_helper(command_t c)
 
 		// recursive call left child command, redirect input stream to the
 		// output of previous command
-		int fd_in = execute_pipe_helper(left);
+		int fd_in = execute_pipe_helper(left,1);
 		// check return status, stop recursion if error occur
 		if(left->status != 0)
 		{
@@ -230,7 +233,7 @@ int execute_pipe_helper(command_t c)
 int execute_pipe_command(command_t c)
 {
 	// save output stream of last command
-	int fd = execute_pipe_helper(c);
+	int fd = execute_pipe_helper(c,0);
 	if(c->status == 0) {
 		int n = 0;
 		char buffer[1024];

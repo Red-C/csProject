@@ -1,0 +1,27 @@
+cript is ok because it contains only digits, letters, and \
+! % + , - . / : @ ^ _
+
+2. This script is also ok because it contains ; and | and && and || and \
+||( and ) &&and < and > and || they all appear in correct order.
+
+3. This is a simple command.
+
+4. ;(this is a simple command; this is another simple command)
+
+5. This is a simple command >.;
+   This is a simple command <.;
+      This is a simple command > word
+	     This is a simple command < word
+		    This is a simple command < word1 > word2
+
+			6. command 1 || (command 2; command 3) || command 4
+
+			7. command 1 | command 2 && command 3 | command 4 || command 5 | command 6
+
+			8. command 1 || command 2;
+			   command 3 && command 4;
+
+			   9. # this is a not
+			      #this is is 
+
+				  10. nothing to test
