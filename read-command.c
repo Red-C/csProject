@@ -169,7 +169,7 @@ isSEQ(queue *s)
 	token_type type;
 	// have not reached the end of file
 	if(next(*s) != NULL) {
-		type = ((pair*)next(*s))->key;
+		type = next(*s)->key;
 		// if next type is sequence remove token and return true
 		// **we do not have to worry about new line because
 		// read_simple_command will change the new_line character
@@ -256,6 +256,7 @@ read_seq(command_t holder, queue *s)
 	// allocate memory for current pipeline command
 	else  								
 	{ 
+		eat_newline(s);
 		// assign left and right child, left associative
 		// right child will be NULL if it reaches the end of command
 		// and the command is end with ';'
@@ -302,6 +303,7 @@ read_subshell(queue *s)
 		*s = destroy(*s);
 		cmd->u.subshell_command = read_seq(NULL, s);
 		
+		eat_newline(s);
 		// match right shell
 		if(next_token_type(s) == RB)	{
 			*s = destroy(*s);	
@@ -1043,7 +1045,7 @@ read_simple_command( queue *s)
 	// sub shell command, therefore, eats all the newline at this point is 
 	// enough
 	eat_newline(s);
-	if (isempty(*s)) {
+	if (isempty(*s) || next(*s)->key == RB) {
 		return NULL;
 	}
 	

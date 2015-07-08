@@ -1,9 +1,39 @@
 changes not staged for commit:
 
 	modified:   execute-command.c
-	
-	please write testcase for program
+	modified:   read-command.c
 
-	[finished] execute multiple complete commands in sequence.
+	[finished] lab1b
 
-	
+	please test in next commit:
+		simple command
+		pipe command (one or more in sequence)
+		and or command ( one or more in sequence)
+		multiple complete command
+		command with white splace( one or more white splace)
+		command with backslash( one or more backslash)
+		complete commands with subshell
+		complete commands with complex subshell
+		complete commands with next subshell
+		
+		error command with all situation above
+		
+	test command:
+		make
+		./timetrash -p test_case    # print tree
+		./timetrash -t test_case 	# execute tree
+
+	[NOTES] history is not working because the bash file is not link under
+	sys.
+
+
+	[BUG] empty simple command if new_line before right bracket
+		  read_command.c: read simple changes the type of the 
+	new_line before right bracket to SEQ, which causes read_simple_command
+	detect next token is not a word and the queue is not empty; therefore,
+	throw exception.
+	[FIXED] read_command.c 1043: return null if queue is empty or next
+	token is RB, next token is RB means the subshell command tree is 
+	completed.
+
+
