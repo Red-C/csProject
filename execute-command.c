@@ -40,9 +40,6 @@ execute_command (command_t c, int time_travel)
 {
 	int exit_status = time_travel;
 	exit_status = execute_andor_command(c);
-	//printf("exit status: %d\n", exit_status);
-	if(c->status != 0)
-		error(0,1,"command execute unsuccessful");
 }
 
 /**
@@ -87,14 +84,25 @@ execute_simple_command ( command_t c)
 		close(fd);
 	}
 
-	// execute command, this will replace current block of code, 
-	// and return status if it is exit
-	execvp(c->u.word[0], c->u.word);
-	// this should not be reached if command execute successful
-	// because the process should be replace by the command
-	// if this is reached, it means the command can not be found
-	// in bash folder, ie. history
-	exit(1);
+	if(c->type == SUBSHELL_COMMAND)
+	{
+		// subshell has same priority as simple command
+		execute_subshell(c);
+		// don't know why, when execute_subshell exit with 256
+		// the execute_pipe_command function catches 0
+		exit(c->status != 0);
+	}
+	else
+	{
+		// execute command, this will replace current block of code, 
+		// and return status if it is exit
+		execvp(c->u.word[0], c->u.word);
+		// this should not be reached if command execute successful
+		// because the process should be replace by the command
+		// if this is reached, it means the command can not be found
+		// in bash folder, ie. history
+		exit(1);
+	}
 
 }
 
@@ -130,8 +138,8 @@ int execute_pipe_helper(command_t c, int i)
 	// end of recursion, the most left child of tree
 	if(c->type != PIPE_COMMAND) {
 		// end of recursion
-		if(c->type != SIMPLE_COMMAND)
-			  error(0,1, "non simple command has called execute simple");
+		if(c->type != SIMPLE_COMMAND && c->type != SUBSHELL_COMMAND)
+			  error(0,1, "non simple command  or subshell command has called execute simple");
 
 		pid_t pid;
 		if((pid = fork()) == -1)
@@ -145,15 +153,13 @@ int execute_pipe_helper(command_t c, int i)
 			close(fds[1]);
 			execute_simple_command(c);
 			// this can be deleted
-			exit(c->status);
+			exit(c->status != 0);
 
 		}
 		else {
-			int status = 0;
 			// waiting for child process exit
-			while(wait(&status) != pid)
-				printf("waiting..");
-			c->status = status;
+			while(wait(&c->status) != pid)
+				;
 			close(fds[1]);
 			if(c->status != 0) {
 				   close(fds[0]);
@@ -171,49 +177,41 @@ int execute_pipe_helper(command_t c, int i)
 		// output of previous command
 		int fd_in = execute_pipe_helper(left,1);
 		// check return status, stop recursion if error occur
-		if(left->status != 0)
-		{
-			c->status = left->status;
-			return -1;
+		pid_t pid;	
+		if((pid = fork()) == 0)
+		{	// child process	
+			// redirect input fd to fd_i
+			dup2(fd_in, 0);
+			close(fd_in);
+			close(fds[0]);
+			// output stream	
+			dup2(fds[1], 1);
+			close(fds[1]);
+			// redirect output stream
+			execute_simple_command(right);
+			// exit with exit status of right command
+			// return non zero value if execute unsuccessful
+			// zero if successful
+			exit(right->status != 0);
+			
 		}
-		// no error on left
-		else {
-			pid_t pid;	
-			if((pid = fork()) == 0)
-			{	// child process	
-				// redirect input fd to fd_i
-				dup2(fd_in, 0);
-				close(fd_in);
+		else
+		{	// parent process
+			// wait for child process return
+			// receive exit status and save it into c->status
+			// the upper level of recursive will check the status if zero or not
+			while(wait(&c->status) != pid)
+				;
+			// close fd_in
+			close(fd_in);
+			close(fds[1]);
+			if(c->status != 0)
+			{
 				close(fds[0]);
-				// output stream	
-				dup2(fds[1], 1);
-				// redirect output stream
-				execute_simple_command(right);
-				// exit with exit status of right command
-				// return non zero value if execute unsuccessful
-				// zero if successful
-				exit(right->status);
-				
+				return -1;
 			}
-			else
-			{	// parent process
-				// wait for child process return
-				// receive exit status and save it into c->status
-				// the upper level of recursive will check the status if zero or not
-				while(wait(&c->status) != pid)
-					;
-				// close fd_in
-				close(fd_in);
-				close(fds[1]);
-				if(c->status != 0)
-				{
-					close(fds[0]);
-					return -1;
-				}
-				// return output stream fd
-				return fds[0];
-			}
-
+			// return output stream fd
+			return fds[0];
 		}
 	}
 	// return fds2
@@ -258,12 +256,7 @@ int execute_pipe_command(command_t c)
 int execute_andor_command(command_t c) {
 	// end of recursive
 	if(c->type != AND_COMMAND && c->type != OR_COMMAND) {
-		// execute subshell command
-		if(c->type == SUBSHELL_COMMAND)
-			execute_subshell(c);
-		// execute pipe command
-		else
-			execute_pipe_command(c);
+		execute_pipe_command(c);
 		// status of command
 		return c->status;
 	}
@@ -289,13 +282,15 @@ int execute_andor_command(command_t c) {
  * descr: subshell uses this only
  */
 int execute_subshell_helper(command_t c) {
-	if(c->type != SEQUENCE_COMMAND)
-		return execute_andor_command(c);
+	if(c->type != SEQUENCE_COMMAND){
+		c->status = execute_andor_command(c);
+	}
 	else {
 		execute_subshell_helper(c->u.command[0]);
-		return execute_andor_command(c->u.command[1]);
+		c->status = execute_andor_command(c->u.command[1]);
 
 	}
+	return c->status;
 }
 /**
  * execute_subshell
@@ -307,5 +302,7 @@ int execute_subshell(command_t c) {
 		error(0,1,"non subshell command has called execute subshell");
 
 	command_t cmd = c->u.subshell_command;
-	return execute_subshell_helper(cmd);
+	c->status = execute_subshell_helper(cmd);
+	return c->status;
 }
+

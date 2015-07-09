@@ -61,9 +61,11 @@ eat_newline	read-command.c	/^void eat_newline(queue *s) {$/;"	f
 enqueue	read-command.c	/^queue enqueue(pair* in, queue q)$/;"	f
 execute_andor_command	execute-command.c	/^int execute_andor_command(command_t c) {$/;"	f
 execute_command	execute-command.c	/^execute_command (command_t c, int time_travel)$/;"	f
-execute_pipe_command	execute-command.c	/^int execute_pipe_command(command_t c) {$/;"	f
-execute_pipe_helper	execute-command.c	/^int execute_pipe_helper(command_t c)$/;"	f
-execute_simple_command	execute-command.c	/^int execute_simple_command ( command_t c)$/;"	f
+execute_pipe_command	execute-command.c	/^int execute_pipe_command(command_t c)$/;"	f
+execute_pipe_helper	execute-command.c	/^int execute_pipe_helper(command_t c, int i)$/;"	f
+execute_simple_command	execute-command.c	/^execute_simple_command ( command_t c)$/;"	f
+execute_subshell	execute-command.c	/^int execute_subshell(command_t c) {$/;"	f
+execute_subshell_helper	execute-command.c	/^int execute_subshell_helper(command_t c) {$/;"	f
 false	command.h	11;"	d
 get_next_byte	main.c	/^get_next_byte (void *stream)$/;"	f	file:
 head	read-command.c	/^	 struct node * head;$/;"	m	struct:queue	typeref:struct:queue::node	file:
@@ -77,7 +79,7 @@ iterator	read-command.c	/^	int iterator;				\/\/ iterator$/;"	m	struct:command_s
 key	read-command.c	/^	token_type key;$/;"	m	struct:pair	file:
 lineError	partition.c	/^void lineError(int numLine)$/;"	f
 lineError	read-command.c	/^void lineError(const char* msg)$/;"	f
-main	execute-command.c	/^int main(int argc, char** argv) $/;"	f
+load_in_out	read-command.c	/^load_in_out(queue *s, command_t cmd) {$/;"	f
 main	main.c	/^main (int argc, char **argv)$/;"	f
 make_command_stream	read-command.c	/^make_command_stream (int (*get_next_byte) (void *),$/;"	f
 malloc_cmd	read-command.c	/^malloc_cmd()$/;"	f

@@ -76,6 +76,7 @@ struct command_stream {
 command_stream_t build_token_tree(queue);
 queue partition(char* input);
 void lineError(const char*);
+void load_in_out(queue*, command_t);
 /*********************************************************************/
 
 
@@ -307,6 +308,7 @@ read_subshell(queue *s)
 		// match right shell
 		if(next_token_type(s) == RB)	{
 			*s = destroy(*s);	
+			load_in_out(s, cmd);
 			if(next_token_type(s) == NEW_LINE) {
 				_line++;
 				next(*s)->key = SEQ;
@@ -402,26 +404,15 @@ read_andor(command_t holder, queue *s)
 	// beginning of current complete command
 	if( holder == NULL) 
 	{
-		// because the new line character can not appear before || &&
-		// we do not have to eat them
-		token_type t = next_token_type(s);
-		command_t cur;
-		// read subshell command if ( is reached
-		if(t == LB) 
-			cur = read_subshell(s);
-		
-		// read pipeline command otherwise
-		else
-		{
-			cur = read_pipeline(NULL, s);
-			// empty command, this happen if multiple new_line character
-			// is appended at the end of file
-			// TODO we can remove this, because if the code reaches end 
-			// of file, there will be nothing after that, read_andor will
-			// return holder anyway.
-			if(cur == NULL)
-				return NULL;
-		}
+		command_t cur;	
+		cur = read_pipeline(NULL, s);
+		// empty command, this happen if multiple new_line character
+		// is appended at the end of file
+		// TODO we can remove this, because if the code reaches end 
+		// of file, there will be nothing after that, read_andor will
+		// return holder anyway.
+		if(cur == NULL)
+			return NULL;
 		// left associative
 		return read_andor(cur, s);
 	}
@@ -1023,6 +1014,46 @@ queue partition(char* input)
 }
 
 
+void 
+load_in_out(queue *s, command_t cmd) {
+
+	// if < or > token has reached, assign input or output value to struct
+	token_type type = next_token_type(s);
+	if(type == IN || type == OUT)
+	{
+		// pop < or >
+		*s = destroy(*s);
+		// invalid format, ie: a <;
+		if(next_token_type(s) != WORD)
+			lineError("need file name after IN or OUT token");
+		// get input or output file name
+		char* data = next(*s)->value;
+		// indicator
+		char** ptr = (type == IN)? &cmd->input: &cmd->output; 
+		*ptr = data;
+		// pop message
+		*s = dequeue(*s);
+		token_type next_type = next_token_type(s);;
+		// only read another if type of prev redir is different as 
+		// current redir token
+		if((type == IN && next_type == OUT) 
+				|| (type == OUT && next_type == IN))
+		{
+			// pop < or >
+			*s = destroy(*s);
+			// invalid format: a < b >
+			if(next_token_type(s) != WORD)
+				lineError("need file name after IN or OUT token");
+			// get file name
+			data = next(*s)->value;
+			// indicator
+			ptr = (next_type == IN)? &cmd->input: &cmd->output;
+			*ptr = data;
+			// pop message
+			*s = dequeue(*s);
+		}
+	}
+}
 
 
 /**
@@ -1048,6 +1079,12 @@ read_simple_command( queue *s)
 	if (isempty(*s) || next(*s)->key == RB) {
 		return NULL;
 	}
+	// because the new line character can not appear before || &&
+	// we do not have to eat them
+	token_type t = next_token_type(s);
+	// read subshell command if ( is reached
+	if(t == LB) 
+		return read_subshell(s);
 	
 	command_t cmd = malloc_cmd();
 	int n = 0;
@@ -1083,47 +1120,12 @@ read_simple_command( queue *s)
 			words = dequeue(words);
 		}
 
-		// if < or > token has reached, assign input or output value to struct
-		token_type type = next_token_type(s);
-		if(type == IN || type == OUT)
-		{
-			// pop < or >
-			*s = destroy(*s);
-			// invalid format, ie: a <;
-			if(next_token_type(s) != WORD)
-				lineError("need file name after IN or OUT token");
-			// get input or output file name
-			char* data = next(*s)->value;
-			// indicator
-			char** ptr = (type == IN)? &cmd->input: &cmd->output; 
-			*ptr = data;
-			// pop message
-			*s = dequeue(*s);
-			token_type next_type = next_token_type(s);;
-			// only read another if type of prev redir is different as 
-			// current redir token
-			if((type == IN && next_type == OUT) 
-					|| (type == OUT && next_type == IN))
-			{
-				// pop < or >
-				*s = destroy(*s);
-				// invalid format: a < b >
-				if(next_token_type(s) != WORD)
-					lineError("need file name after IN or OUT token");
-				// get file name
-				data = next(*s)->value;
-				// indicator
-				ptr = (next_type == IN)? &cmd->input: &cmd->output;
-				*ptr = data;
-				// pop message
-				*s = dequeue(*s);
-			}
-		}
+		load_in_out(s, cmd);
 
 		// because new_line can only appear before of first words of message
 		// and can only appear after || && |, therefore if the \n is appended
 		// at the end of simple command, it is the end of seq 
-		type = next_token_type(s);
+		token_type type = next_token_type(s);
 		if(type == NEW_LINE) {
 			_line++;
 			next(*s)->key = SEQ;
