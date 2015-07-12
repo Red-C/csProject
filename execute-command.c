@@ -8,6 +8,8 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
+
 
 /* FIXME: You may need to add #include directives, macro definitions,
    static function definitions, etc.  */
@@ -101,6 +103,7 @@ execute_simple_command ( command_t c)
 		// because the process should be replace by the command
 		// if this is reached, it means the command can not be found
 		// in bash folder, ie. history
+		fprintf(stderr, "%s: command not found\n", c->u.word[0]);
 		exit(1);
 	}
 
