@@ -36,12 +36,15 @@ TESTS	Makefile	/^TESTS = $(wildcard test*.sh)$/;"	m
 TEST_BASES	Makefile	/^TEST_BASES = $(subst .sh,,$(TESTS))$/;"	m
 TIMETRASH_OBJECTS	Makefile	/^TIMETRASH_OBJECTS = $(subst .c,.o,$(TIMETRASH_SOURCES))$/;"	m
 TIMETRASH_SOURCES	Makefile	/^TIMETRASH_SOURCES = \\$/;"	m
+VECTOR_INIT_CAP	time_travel.c	6;"	d	file:
 WORD	read-command.c	/^	WORD,  \/\/ token	$/;"	e	enum:token_type	file:
 _line	read-command.c	/^unsigned int _line = 0;$/;"	v
+array	time_travel.c	/^	void** array;$/;"	m	struct:vector	file:
 b_pair	read-command.c	/^b_pair(token_type key, char* value)$/;"	f
 bool	command.h	/^typedef int bool;$/;"	t
 buffer	read-command.c	/^	char* buffer;				\/\/ start location of buffer, deallocate purpose$/;"	m	struct:command_stream	file:
 build_token_tree	read-command.c	/^command_stream_t build_token_tree(queue Q) {$/;"	f
+cap	time_travel.c	/^	int cap;$/;"	m	struct:vector	file:
 check_nonnull	alloc.c	/^check_nonnull (void *p)$/;"	f	file:
 checked_grow_alloc	alloc.c	/^checked_grow_alloc (void *ptr, size_t *size)$/;"	f
 checked_malloc	alloc.c	/^checked_malloc (size_t size)$/;"	f
@@ -59,14 +62,17 @@ dequeue	read-command.c	/^queue dequeue(queue q)$/;"	f
 destroy	read-command.c	/^queue destroy(queue q)$/;"	f
 eat_newline	read-command.c	/^void eat_newline(queue *s) {$/;"	f
 enqueue	read-command.c	/^queue enqueue(pair* in, queue q)$/;"	f
+execute	time_travel.c	/^void execute(command_t cmd){$/;"	f
 execute_andor_command	execute-command.c	/^int execute_andor_command(command_t c) {$/;"	f
 execute_command	execute-command.c	/^execute_command (command_t c, int time_travel)$/;"	f
+execute_commands	time_travel.c	/^void execute_commands(command_t* commands) {$/;"	f
 execute_pipe_command	execute-command.c	/^int execute_pipe_command(command_t c)$/;"	f
 execute_pipe_helper	execute-command.c	/^int execute_pipe_helper(command_t c, int i)$/;"	f
 execute_simple_command	execute-command.c	/^execute_simple_command ( command_t c)$/;"	f
 execute_subshell	execute-command.c	/^int execute_subshell(command_t c) {$/;"	f
 execute_subshell_helper	execute-command.c	/^int execute_subshell_helper(command_t c) {$/;"	f
 false	command.h	11;"	d
+find_and_delete	time_travel.c	/^void find_and_delete(vector* v, void* node) {$/;"	f
 get_next_byte	main.c	/^get_next_byte (void *stream)$/;"	f	file:
 head	read-command.c	/^	 struct node * head;$/;"	m	struct:queue	typeref:struct:queue::node	file:
 input	command-internals.h	/^  char *input;$/;"	m	struct:command
@@ -107,9 +113,11 @@ read_seq	read-command.c	/^read_seq(command_t holder, queue *s)$/;"	f
 read_simple_command	read-command.c	/^read_simple_command( queue *s) $/;"	f
 read_subshell	read-command.c	/^read_subshell(queue *s) $/;"	f
 root	read-command.c	/^	command_t root;				\/\/ root of tree$/;"	m	struct:command_stream	file:
+runnable_vector	time_travel.c	/^vector runnable_vector;$/;"	v
 script_name	main.c	/^static char const *script_name;$/;"	v	file:
 size	read-command.c	/^	 unsigned int size;$/;"	m	struct:queue	file:
 size	read-command.c	/^	size_t size;				\/\/ number of element in command_queue$/;"	m	struct:command_stream	file:
+size	time_travel.c	/^	int size;$/;"	m	struct:vector	file:
 status	command-internals.h	/^  int status;$/;"	m	struct:command
 subshell_command	command-internals.h	/^    struct command *subshell_command;$/;"	m	union:command::__anon1	typeref:struct:command::__anon1::command
 tail	read-command.c	/^	 struct node * tail;$/;"	m	struct:queue	typeref:struct:queue::node	file:
@@ -121,4 +129,14 @@ u	command-internals.h	/^  } u;$/;"	m	struct:command	typeref:union:command::__ano
 usage	main.c	/^usage (void)$/;"	f	file:
 value	read-command.c	/^	 pair* value;$/;"	m	struct:node	file:
 value	read-command.c	/^	char* value;$/;"	m	struct:pair	file:
+vector	time_travel.c	/^typedef struct vector {$/;"	s	file:
+vector	time_travel.c	/^} vector;$/;"	t	typeref:struct:vector	file:
+vector_delete	time_travel.c	/^void vector_delete(vector* v, int i) {$/;"	f
+vector_free	time_travel.c	/^void vector_free(vector* v)$/;"	f
+vector_get	time_travel.c	/^void *vector_get(vector* v, int i)$/;"	f
+vector_init	time_travel.c	/^vector *vector_init() {$/;"	f
+vector_insert	time_travel.c	/^void vector_insert(vector* v, void* x)$/;"	f
+vector_set	time_travel.c	/^void vector_set(vector* v, int i, void* n)$/;"	f
+vector_size	time_travel.c	/^int vector_size(vector *v){$/;"	f
+waiting_queue	time_travel.c	/^vector waiting_queue;$/;"	v
 word	command-internals.h	/^    char **word;$/;"	m	union:command::__anon1

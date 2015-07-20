@@ -34,6 +34,9 @@ struct command
     // for SUBSHELL_COMMAND:
     struct command *subshell_command;
   } u;
+
+  struct command** listeners;
+  int n_waiting;
 };
 
 #endif
