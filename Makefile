@@ -1,7 +1,7 @@
 # CS 111 Lab 1 Makefile
 
 CC = gcc
-CFLAGS = -g -Wall -Wextra -Wno-unused -Werror
+CFLAGS = -g -Wall -Wextra -Wno-unused -pthread
 LAB = 1
 DISTDIR = lab1-$(USER)
 
@@ -15,7 +15,8 @@ TIMETRASH_SOURCES = \
   execute-command.c \
   main.c \
   read-command.c \
-  print-command.c
+  print-command.c \
+  set.c
 TIMETRASH_OBJECTS = $(subst .c,.o,$(TIMETRASH_SOURCES))
 
 DIST_SOURCES = \

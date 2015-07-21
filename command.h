@@ -4,12 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "alloc.h"
-#include "command-internals.h"
+#include <stdbool.h>
 // UCLA CS 111 Lab 1 command interface
 
-typedef int bool;
-#define false 0
-#define true 1
 typedef struct command *command_t;
 typedef struct command_stream *command_stream_t;
 

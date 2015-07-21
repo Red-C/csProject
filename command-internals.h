@@ -1,6 +1,7 @@
 // UCLA CS 111 Lab 1 command internals
 #ifndef COMMAND_INTERNALS_H
 #define COMMAND_INTERNALS_H
+#include "set.h"
 enum command_type
   {
     AND_COMMAND,         // A && B
@@ -34,6 +35,9 @@ struct command
     // for SUBSHELL_COMMAND:
     struct command *subshell_command;
   } u;
+
+  struct fileSet in;
+  struct fileSet out;
 };
 
 #endif
