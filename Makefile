@@ -12,7 +12,7 @@ TEST_BASES = $(subst .sh,,$(TESTS))
 
 TIMETRASH_SOURCES = \
   alloc.c \
-  execute-command.c \
+  execute-command_temp.c \
   main.c \
   read-command.c \
   print-command.c \
