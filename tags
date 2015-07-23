@@ -9,7 +9,7 @@ AND	read-command.c	/^    AND,   \/\/ &&$/;"	e	enum:token_type	file:
 AND_COMMAND	command-internals.h	/^    AND_COMMAND,         \/\/ A && B$/;"	e	enum:command_type
 BACK_SLASH	read-command.c	/^	BACK_SLASH,$/;"	e	enum:token_type	file:
 CC	Makefile	/^CC = gcc$/;"	m
-CFLAGS	Makefile	/^CFLAGS = -g -Wall -Wextra -Wno-unused -Werror -pthread$/;"	m
+CFLAGS	Makefile	/^CFLAGS = -g -Wall -Wextra -Wno-unused -pthread$/;"	m
 COMMAND_H	command.h	2;"	d
 COMMAND_INTERNALS_H	command-internals.h	3;"	d
 COMMENT	read-command.c	/^	COMMENT, \/\/ #$/;"	e	enum:token_type	file:
@@ -19,6 +19,8 @@ END_OF_FILE	read-command.c	/^	END_OF_FILE,$/;"	e	enum:token_type	file:
 IN	read-command.c	/^	IN,    \/\/ <$/;"	e	enum:token_type	file:
 LAB	Makefile	/^LAB = 1$/;"	m
 LB	read-command.c	/^    LB,  \/\/ ( $/;"	e	enum:token_type	file:
+LOCKER	main.c	/^locker LOCKER;$/;"	v
+LOCKER_H	locker.h	2;"	d
 NEW_LINE	read-command.c	/^	NEW_LINE,$/;"	e	enum:token_type	file:
 OR	read-command.c	/^	OR,	   \/\/ ||$/;"	e	enum:token_type	file:
 OR_COMMAND	command-internals.h	/^    OR_COMMAND,          \/\/ A || B$/;"	e	enum:command_type
@@ -27,6 +29,8 @@ PIPE	read-command.c	/^    PIPE,  \/\/ | $/;"	e	enum:token_type	file:
 PIPE_COMMAND	command-internals.h	/^    PIPE_COMMAND,        \/\/ A | B$/;"	e	enum:command_type
 QUEUE_H	queue.h	2;"	d
 RB	read-command.c	/^	RB,   \/\/ )$/;"	e	enum:token_type	file:
+RLOCK	locker.c	32;"	d	file:
+RLOCK	main.c	84;"	d	file:
 SEQ	read-command.c	/^    SEQ,   \/\/ \\n ;$/;"	e	enum:token_type	file:
 SEQUENCE_COMMAND	command-internals.h	/^    SEQUENCE_COMMAND,    \/\/ A ; B$/;"	e	enum:command_type
 SEQ_ENTER	read-command.c	/^	SEQ_ENTER$/;"	e	enum:token_type	file:
@@ -39,26 +43,33 @@ TEST_BASES	Makefile	/^TEST_BASES = $(subst .sh,,$(TESTS))$/;"	m
 TIMETRASH_OBJECTS	Makefile	/^TIMETRASH_OBJECTS = $(subst .c,.o,$(TIMETRASH_SOURCES))$/;"	m
 TIMETRASH_SOURCES	Makefile	/^TIMETRASH_SOURCES = \\$/;"	m
 VECTOR_H	vector.h	2;"	d
-VECTOR_INIT_CAP	time_travel.c	7;"	d	file:
 VECTOR_INIT_CAP	vector.h	3;"	d
+WLOCK	locker.c	33;"	d	file:
+WLOCK	main.c	85;"	d	file:
 WORD	read-command.c	/^	WORD,  \/\/ token	$/;"	e	enum:token_type	file:
+_GNU_SOURCE	main.c	2;"	d	file:
 _line	read-command.c	/^unsigned int _line = 0;$/;"	v
 _queue	read-command.c	/^typedef struct _queue{$/;"	s	file:
 _queue	read-command.c	/^} _queue;$/;"	t	typeref:struct:_queue	file:
-addFile	set.c	/^void addFile(struct fileSet *s, char* file)$/;"	f
-array	time_travel.c	/^	void** array;$/;"	m	struct:vector	file:
+addFile	set.c	/^void addFile(set *s, char* file)$/;"	f
 array	vector.h	/^	void** array;$/;"	m	struct:vector
 b_pair	read-command.c	/^b_pair(token_type key, char* value)$/;"	f
+box	locker.h	/^typedef struct box $/;"	s
+box	locker.h	/^} box;$/;"	t	typeref:struct:box
+box	main.c	/^typedef struct box $/;"	s	file:
+box	main.c	/^} box;$/;"	t	typeref:struct:box	file:
+box_t	locker.h	/^typedef box* box_t;$/;"	t
+box_t	main.c	/^typedef box* box_t;$/;"	t	file:
 buffer	read-command.c	/^	char* buffer;				\/\/ start location of buffer, deallocate purpose$/;"	m	struct:command_stream	file:
-build_I_O_set	main.c	/^build_I_O_set(command_t c, struct fileSet *in, struct fileSet *out)$/;"	f
+build_I_O_set	main.c	/^build_I_O_set(command_t c, set *in, set *out)$/;"	f
+build_I_O_set	main_temp.c	/^build_I_O_set(command_t c, struct fileSet *in, struct fileSet *out)$/;"	f
 build_token_tree	read-command.c	/^command_stream_t build_token_tree(_queue Q) {$/;"	f
-cap	time_travel.c	/^	int cap;$/;"	m	struct:vector	file:
 cap	vector.h	/^	int cap;$/;"	m	struct:vector
 check_nonnull	alloc.c	/^check_nonnull (void *p)$/;"	f	file:
 checked_grow_alloc	alloc.c	/^checked_grow_alloc (void *ptr, size_t *size)$/;"	f
 checked_malloc	alloc.c	/^checked_malloc (size_t size)$/;"	f
 checked_realloc	alloc.c	/^checked_realloc (void *ptr, size_t size)$/;"	f
-cleanSet	set.c	/^void cleanSet(struct fileSet *s)$/;"	f
+cleanSet	set.c	/^void cleanSet(set *s)$/;"	f
 command	command-internals.h	/^    struct command *command[2];$/;"	m	union:command::__anon1	typeref:struct:command::__anon1::command
 command	command-internals.h	/^struct command$/;"	s
 command_indented_print	print-command.c	/^command_indented_print (int indent, command_t c)$/;"	f	file:
@@ -68,41 +79,51 @@ command_stream	read-command.c	/^struct command_stream {$/;"	s	file:
 command_stream_t	command.h	/^typedef struct command_stream *command_stream_t;$/;"	t	typeref:struct:command_stream
 command_t	command.h	/^typedef struct command *command_t;$/;"	t	typeref:struct:command
 command_type	command-internals.h	/^enum command_type$/;"	g
-contain	set.c	/^int contain(const struct fileSet *s, char* file)$/;"	f
-createFileSet	set.c	/^struct fileSet createFileSet()$/;"	f
+contain	set.c	/^int contain(const set *s, char* file)$/;"	f
+createFileSet	set.c	/^set createFileSet()$/;"	f
+create_locker	locker.c	/^create_locker(char** all_files, int n)$/;"	f
+create_locker	main.c	/^create_locker(char** all_files, int n)$/;"	f
 dequeue	read-command.c	/^_queue dequeue(_queue q)$/;"	f
 destroy	read-command.c	/^_queue destroy(_queue q)$/;"	f
-diffSet	set.c	/^struct fileSet diffSet(struct fileSet *s1, struct fileSet *s2)$/;"	f
+diffSet	set.c	/^struct fileSet diffSet(set *s1, set *s2)$/;"	f
 eat_newline	read-command.c	/^void eat_newline(_queue *s) {$/;"	f
 enqueue	read-command.c	/^_queue enqueue(pair* in, _queue q)$/;"	f
 execute	main.c	/^execute(void* cmd) {$/;"	f
-execute	time_travel.c	/^void execute(command_t cmd){$/;"	f
+execute	main_temp.c	/^execute(void* cmd) {$/;"	f
 execute_andor_command	execute-command.c	/^int execute_andor_command(command_t c) {$/;"	f
 execute_command	execute-command.c	/^execute_command (command_t c, int time_travel)$/;"	f
-execute_commands	time_travel.c	/^void execute_commands(command_t* commands) {$/;"	f
 execute_pipe_command	execute-command.c	/^int execute_pipe_command(command_t c)$/;"	f
 execute_pipe_helper	execute-command.c	/^int execute_pipe_helper(command_t c, int i)$/;"	f
 execute_simple_command	execute-command.c	/^execute_simple_command ( command_t c)$/;"	f
 execute_subshell	execute-command.c	/^int execute_subshell(command_t c) {$/;"	f
 execute_subshell_helper	execute-command.c	/^int execute_subshell_helper(command_t c) {$/;"	f
 fileName	set.h	/^	char** fileName; \/\/an array of pointers to file names.$/;"	m	struct:fileSet
-fileSet	set.h	/^struct fileSet$/;"	s
-find_and_delete	time_travel.c	/^void find_and_delete(vector* v, void* node) {$/;"	f
+fileSet	set.h	/^typedef struct fileSet$/;"	s
+filename	locker.h	/^	char* filename;$/;"	m	struct:box
+filename	main.c	/^	char* filename;$/;"	m	struct:box	file:
 find_and_delete	vector.h	/^void find_and_delete(vector* v, void* node) {$/;"	f
-generate_vectors	time_travel.c	/^generate_vectors(command_t* commands, vector* runnable_vector, vector* waiting_vector) {$/;"	f
+generate_file_indexes	main.c	/^generate_file_indexes(command_t cmd,set* in, set *out, set *set) $/;"	f
+get_locks	locker.c	/^get_locks(locker* L, int* r_locker_id, int n, int* w_locker_id, int m) {$/;"	f
+get_locks	main.c	/^get_locks(locker* L, int* r_locker_id, int n, int* w_locker_id, int m) {$/;"	f
 get_next_byte	main.c	/^get_next_byte (void *stream)$/;"	f	file:
+get_next_byte	main_temp.c	/^get_next_byte (void *stream)$/;"	f	file:
 head	queue.h	/^	queue_node* head;$/;"	m	struct:queue
 head	read-command.c	/^	 struct node * head;$/;"	m	struct:_queue	typeref:struct:_queue::node	file:
-in	command-internals.h	/^  struct fileSet in;$/;"	m	struct:command	typeref:struct:command::fileSet
+in	command-internals.h	/^  int* in;$/;"	m	struct:command
+indexOf	set.c	/^int indexOf(set* s, char* file)$/;"	f
 input	command-internals.h	/^  char *input;$/;"	m	struct:command
-interSet	set.c	/^struct fileSet interSet(const struct fileSet *s1, const struct fileSet *s2)$/;"	f
+interSet	set.c	/^set interSet(const set *s1, const set *s2)$/;"	f
+isChanged	locker.h	/^	volatile bool isChanged;$/;"	m	struct:locker
+isChanged	main.c	/^	bool isChanged;$/;"	m	struct:locker	file:
 isRegular	partition.c	/^int isRegular(char input)$/;"	f
 isRegular	read-command.c	/^int isRegular(char input)$/;"	f
 isSEQ	read-command.c	/^isSEQ(_queue *s) $/;"	f
 isWORDS	read-command.c	/^isWORDS(_queue* s) $/;"	f
-is_any_thread_finished	main.c	/^volatile bool is_any_thread_finished = false;$/;"	v
-is_dependency	main.c	/^bool is_dependency(command_t cmd, struct fileSet* in, struct fileSet* out) {$/;"	f
-is_intersect	set.c	/^bool is_intersect(const struct fileSet *left, const struct fileSet *right) $/;"	f
+is_any_thread_finished	main_temp.c	/^volatile bool is_any_thread_finished = false;$/;"	v
+is_dependency	main_temp.c	/^bool is_dependency(command_t cmd, struct fileSet* in, struct fileSet* out) {$/;"	f
+is_intersect	set.c	/^bool is_intersect(const set *left, const set *right) $/;"	f
+is_wlocked	locker.h	/^	bool is_wlocked;$/;"	m	struct:box
+is_wlocked	main.c	/^	bool is_wlocked;$/;"	m	struct:box	file:
 isempty	read-command.c	/^bool isempty(const _queue q)$/;"	f
 item	queue.h	/^	void *item;$/;"	m	struct:queue_node
 iterator	read-command.c	/^	int iterator;				\/\/ iterator$/;"	m	struct:command_stream	file:
@@ -110,17 +131,31 @@ key	read-command.c	/^	token_type key;$/;"	m	struct:pair	file:
 lineError	partition.c	/^void lineError(int numLine)$/;"	f
 lineError	read-command.c	/^void lineError(const char* msg)$/;"	f
 load_in_out	read-command.c	/^load_in_out(_queue *s, command_t cmd) {$/;"	f
+locker	locker.h	/^typedef struct locker $/;"	s
+locker	locker.h	/^} locker;$/;"	t	typeref:struct:locker
+locker	main.c	/^typedef struct locker $/;"	s	file:
+locker	main.c	/^} locker;$/;"	t	typeref:struct:locker	file:
 main	main.c	/^main (int argc, char **argv)$/;"	f
+main	main_temp.c	/^main (int argc, char **argv)$/;"	f
 make_command_stream	read-command.c	/^make_command_stream (int (*get_next_byte) (void *),$/;"	f
 malloc_cmd	read-command.c	/^malloc_cmd()$/;"	f
 memory_exhausted	alloc.c	/^memory_exhausted (int errnum)$/;"	f	file:
-mutex	time_travel.c	/^pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;$/;"	v
+mutex_lock	locker.h	/^pthread_mutex_t mutex_lock = PTHREAD_MUTEX_INITIALIZER;$/;"	v
+mutex_lock	main.c	/^pthread_mutex_t mutex_lock = PTHREAD_MUTEX_INITIALIZER;$/;"	v
+n	locker.h	/^	int n;$/;"	m	struct:box
+n	main.c	/^	int n;$/;"	m	struct:box	file:
+n_in	command-internals.h	/^  int n_in;$/;"	m	struct:command
+n_locks	locker.h	/^	int n_locks;$/;"	m	struct:locker
+n_locks	main.c	/^	int n_locks;$/;"	m	struct:locker	file:
+n_out	command-internals.h	/^  int n_out;$/;"	m	struct:command
+n_reading	locker.h	/^	volatile int n_reading;$/;"	m	struct:box
+n_reading	main.c	/^	int n_reading;$/;"	m	struct:box	file:
 next	queue.h	/^	struct queue_node *next;$/;"	m	struct:queue_node	typeref:struct:queue_node::queue_node
 next	read-command.c	/^	 struct node * next; $/;"	m	struct:node	typeref:struct:node::node	file:
 next	read-command.c	/^pair* next(const _queue q)$/;"	f
 next_token_type	read-command.c	/^next_token_type(_queue* s)$/;"	f
 node	read-command.c	/^struct node{$/;"	s	file:
-out	command-internals.h	/^  struct fileSet out;$/;"	m	struct:command	typeref:struct:command::fileSet
+out	command-internals.h	/^  int* out;$/;"	m	struct:command
 output	command-internals.h	/^  char *output;$/;"	m	struct:command
 pair	read-command.c	/^typedef struct pair {$/;"	s	file:
 pair	read-command.c	/^} pair;$/;"	t	typeref:struct:pair	file:
@@ -130,6 +165,7 @@ prefix_traversal	read-command.c	/^command_t* prefix_traversal(command_t root, si
 prefix_traversal_helper	read-command.c	/^command_t* prefix_traversal_helper(command_t* Q, command_t cmd, size_t *cap, size_t *i) {$/;"	f
 print_command	print-command.c	/^print_command (command_t c)$/;"	f
 program_name	main.c	/^static char const *program_name;$/;"	v	file:
+program_name	main_temp.c	/^static char const *program_name;$/;"	v	file:
 q_empty	read-command.c	/^q_empty()$/;"	f
 queue	queue.h	/^typedef struct queue $/;"	s
 queue	queue.h	/^} queue;$/;"	t	typeref:struct:queue
@@ -143,52 +179,59 @@ queue_node	queue.h	/^} queue_node;$/;"	t	typeref:struct:queue_node
 queue_sizeof	queue.h	/^int queue_sizeof(queue* Q)$/;"	f
 read_andor	read-command.c	/^read_andor(command_t holder, _queue *s) $/;"	f
 read_command_stream	read-command.c	/^read_command_stream (command_stream_t s)$/;"	f
+read_lock	locker.c	28;"	d	file:
+read_lock	main.c	80;"	d	file:
 read_pipeline	read-command.c	/^read_pipeline(command_t holder, _queue* s) $/;"	f
 read_seq	read-command.c	/^read_seq(command_t holder, _queue *s)$/;"	f
 read_simple_command	read-command.c	/^read_simple_command( _queue *s) $/;"	f
 read_subshell	read-command.c	/^read_subshell(_queue *s) $/;"	f
+read_unlock	locker.c	30;"	d	file:
+read_unlock	main.c	82;"	d	file:
+release_locks	locker.c	/^release_locks(locker* L, int* r_locker_id, int n, int* w_locker_id, int m) {$/;"	f
+release_locks	main.c	/^release_locks(locker* L, int* r_locker_id, int n, int* w_locker_id, int m) {$/;"	f
 root	read-command.c	/^	command_t root;				\/\/ root of tree$/;"	m	struct:command_stream	file:
-runnable_vector	time_travel.c	/^vector *runnable_vector;$/;"	v
-running_list	main.c	/^vector* running_list;$/;"	v
-running_mutex	main.c	/^pthread_mutex_t running_mutex = PTHREAD_MUTEX_INITIALIZER;$/;"	v
+running_list	main_temp.c	/^vector* running_list;$/;"	v
+running_mutex	main_temp.c	/^pthread_mutex_t running_mutex = PTHREAD_MUTEX_INITIALIZER;$/;"	v
 script_name	main.c	/^static char const *script_name;$/;"	v	file:
+script_name	main_temp.c	/^static char const *script_name;$/;"	v	file:
+set	set.h	/^} set;$/;"	t	typeref:struct:fileSet
+set_read_lock	locker.c	26;"	d	file:
+set_read_lock	main.c	78;"	d	file:
+set_write_lock	locker.c	27;"	d	file:
+set_write_lock	main.c	79;"	d	file:
 size	queue.h	/^	int size;$/;"	m	struct:queue
 size	read-command.c	/^	 unsigned int size;$/;"	m	struct:_queue	file:
 size	read-command.c	/^	size_t size;				\/\/ number of element in command_queue$/;"	m	struct:command_stream	file:
-size	set.h	/^	int size, sizeCap; \/\/size is the number of pointers in the array.$/;"	m	struct:fileSet
-size	time_travel.c	/^	int size;$/;"	m	struct:vector	file:
+size	set.h	/^	int size;$/;"	m	struct:fileSet
 size	vector.h	/^	int size;$/;"	m	struct:vector
-sizeCap	set.h	/^	int size, sizeCap; \/\/size is the number of pointers in the array.$/;"	m	struct:fileSet
+sizeCap	set.h	/^	int sizeCap; \/\/size is the number of pointers in the array.$/;"	m	struct:fileSet
 status	command-internals.h	/^  int status;$/;"	m	struct:command
+storage	locker.h	/^	box** storage;$/;"	m	struct:locker
+storage	main.c	/^	box** storage;$/;"	m	struct:locker	file:
 subshell_command	command-internals.h	/^    struct command *subshell_command;$/;"	m	union:command::__anon1	typeref:struct:command::__anon1::command
+tail	queue.h	/^	queue_node* tail;$/;"	m	struct:queue
 tail	read-command.c	/^	 struct node * tail;$/;"	m	struct:_queue	typeref:struct:_queue::node	file:
 token_type	read-command.c	/^  } token_type;$/;"	t	typeref:enum:token_type	file:
 token_type	read-command.c	/^typedef enum token_type $/;"	g	file:
 type	command-internals.h	/^  enum command_type type;$/;"	m	struct:command	typeref:enum:command::command_type
 u	command-internals.h	/^  } u;$/;"	m	struct:command	typeref:union:command::__anon1
-unionSet	set.c	/^struct fileSet* unionSet(struct fileSet *s1, const struct fileSet *s2)$/;"	f
+unionSet	set.c	/^set* unionSet(set *s1, const set *s2)$/;"	f
 usage	main.c	/^usage (void)$/;"	f	file:
+usage	main_temp.c	/^usage (void)$/;"	f	file:
 value	read-command.c	/^	 pair* value;$/;"	m	struct:node	file:
 value	read-command.c	/^	char* value;$/;"	m	struct:pair	file:
-vector	time_travel.c	/^typedef struct vector {$/;"	s	file:
-vector	time_travel.c	/^} vector;$/;"	t	typeref:struct:vector	file:
 vector	vector.h	/^typedef struct vector {$/;"	s
 vector	vector.h	/^} vector;$/;"	t	typeref:struct:vector
-vector_delete	time_travel.c	/^void vector_delete(vector* v, int i) {$/;"	f
-vector_delete	vector.h	/^void vector_delete(vector* v, int i) {$/;"	f
-vector_free	time_travel.c	/^void vector_free(vector* v)$/;"	f
+vector_delete	vector.h	/^void* vector_delete(vector* v, int i) {$/;"	f
 vector_free	vector.h	/^void vector_free(vector* v)$/;"	f
-vector_get	time_travel.c	/^void *vector_get(vector* v, int i)$/;"	f
 vector_get	vector.h	/^void *vector_get(vector* v, int i)$/;"	f
-vector_init	time_travel.c	/^vector *vector_init() {$/;"	f
 vector_init	vector.h	/^vector *vector_init() {$/;"	f
-vector_insert	time_travel.c	/^void vector_insert(vector* v, void* x)$/;"	f
 vector_insert	vector.h	/^void vector_insert(vector* v, void* x)$/;"	f
-vector_isempty	time_travel.c	/^bool vector_isempty(vector* v) {$/;"	f
 vector_isempty	vector.h	/^bool vector_isempty(vector* v) {$/;"	f
-vector_set	time_travel.c	/^void vector_set(vector* v, int i, void* n)$/;"	f
 vector_set	vector.h	/^void vector_set(vector* v, int i, void* n)$/;"	f
-vector_size	time_travel.c	/^int vector_size(vector *v){$/;"	f
-vector_sizeof	vector.h	28;"	d
-waiting_vector	time_travel.c	/^vector *waiting_vector;$/;"	v
+vector_sizeof	vector.h	30;"	d
 word	command-internals.h	/^    char **word;$/;"	m	union:command::__anon1
+write_lock	locker.c	29;"	d	file:
+write_lock	main.c	81;"	d	file:
+write_unlock	locker.c	31;"	d	file:
+write_unlock	main.c	83;"	d	file:

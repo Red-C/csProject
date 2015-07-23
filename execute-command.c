@@ -10,7 +10,6 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 
-
 /* FIXME: You may need to add #include directives, macro definitions,
    static function definitions, etc.  */
 
@@ -40,24 +39,8 @@ command_status (command_t c)
 void
 execute_command (command_t c, int time_travel)
 {
-		pid_t pid;
-		if((pid = fork()) == -1)
-			  error(0,1,"fork error");
-
-		// child process
-		else if(pid == 0) {
-			int exit_status = time_travel;
-			printf("process is almost running\n");
-			exit_status = execute_andor_command(c);
-			printf("process exit from execute_command\n");
-		}
-		else {
-			// waiting for child process exit
-			while(wait(&c->status) != pid)
-				;
-			return;
-  		}
-
+	int exit_status = time_travel;
+	exit_status = execute_andor_command(c);
 }
 
 /**

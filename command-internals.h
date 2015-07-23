@@ -36,8 +36,11 @@ struct command
     struct command *subshell_command;
   } u;
 
-  struct fileSet in;
-  struct fileSet out;
+  int* in;
+  int n_in;
+  int* out;
+  int n_out;
+
 };
 
 #endif

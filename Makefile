@@ -1,7 +1,7 @@
 # CS 111 Lab 1 Makefile
 
 CC = gcc
-CFLAGS = -g -Wall -Wextra -Wno-unused -pthread
+CFLAGS = -g -Wall -Wextra -Wno-unused -pthread -O0
 LAB = 1
 DISTDIR = lab1-$(USER)
 

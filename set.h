@@ -6,37 +6,36 @@
 #include <stdbool.h>
 
 //set declaration.
-typedef struct set
+typedef struct fileSet
 {
-	void* item; //an array of pointers to file names.
+	char** fileName; //an array of pointers to file names.
 	int size;
 	int sizeCap; //size is the number of pointers in the array.
 } set;
 
-//call this function to create an empty set
-//don't declare any set without this fucntion.
-set create_set();
+struct fileSet createFileSet();
 
 //return 1 if s contains the file, returns 0 otherwise.
-int contain(const set *s, void* item, int (*cmp)(void*, void*));
-
+int contain(const struct fileSet *s, char* file);
 
 //add file to the set if it doesn't exit yet.
-void addFile(set *s, void* item);
+void addFile(struct fileSet *s, char* file);
 
 //return the union of the two sets.
-set* unionSet(set *s1, const set *s2, int (*cmp)(void*, void*));
+struct fileSet* unionSet(struct fileSet *s1, const struct fileSet *s2);
 
 //return the intersection of the two sets.
-set interSet(const set *s1, const set *s2, int (*cmp)(void*, void*));
+struct fileSet interSet(const struct fileSet *s1, const struct fileSet *s2);
 
 //return the difference of the two sets, i.e., s1 - s2.
-set* diffSet(set *s1, set *s2, int (*cmp)(void*, void*));
+struct fileSet diffSet(struct fileSet *s1, struct fileSet *s2);
 
 //free the spaces used by the set.
-void cleanSet(set *s);
+void cleanSet(struct fileSet *s);
 
-bool is_intersect(const set *left, const set *right, int (*cmp)(void*, void*));
+bool is_intersect(const struct fileSet *left, const struct fileSet *right) ;
+
+int indexOf(struct fileSet *s, char* file);
 
 
 #endif

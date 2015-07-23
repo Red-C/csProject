@@ -207,9 +207,11 @@ malloc_cmd()
 	command_t cmd = (command_t)checked_malloc(sizeof(struct command));
 	cmd->output = NULL;
 	cmd->input = NULL;
-	cmd->in = createFileSet();
-	cmd->out = createFileSet();
-	cmd->status = 0;
+	cmd->in = NULL;
+	cmd->n_in = 0;
+	cmd->out = NULL;
+	cmd->n_out = 0;
+	cmd->status = -1;
 	return cmd;
 }
 

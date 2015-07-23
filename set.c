@@ -1,7 +1,9 @@
 #include "set.h"
+#include <assert.h>
+
 //call this function to create an empty set
 //don't declare any set without this fucntion.
-struct fileSet createFileSet()
+set createFileSet()
 {
 	struct fileSet s;
 	s.size = 0;
@@ -12,21 +14,27 @@ struct fileSet createFileSet()
 
 
 //return 1 if s contains the file, returns 0 otherwise.
-int contain(const struct fileSet *s, char* file)
+int contain(const set *s, char* file)
 {
+	assert(file != NULL);
 	int i;
 
-	for (i = 0; i < s->size; i++)
+	for (i = 0; i < s->size; i++) {
+		assert(s->fileName[i] != NULL);
 		if (strcmp(s->fileName[i], file) == 0)
 			return 1;
+	}
 
 	return 0;
 }
 
 
 //add file to the set if it doesn't exit yet.
-void addFile(struct fileSet *s, char* file)
+void addFile(set *s, char* file)
 {
+	assert(file != NULL);
+	assert(strlen(file) != 0);
+
 	//if the set already contains that file, do nothing and return.
 	if (contain(s, file))
 		return;
@@ -48,7 +56,7 @@ void addFile(struct fileSet *s, char* file)
 }
 
 //return the union of the two sets.
-struct fileSet* unionSet(struct fileSet *s1, const struct fileSet *s2)
+set* unionSet(set *s1, const set *s2)
 {
 	//add files in s2 into u.
 	int i = 0;
@@ -59,9 +67,9 @@ struct fileSet* unionSet(struct fileSet *s1, const struct fileSet *s2)
 }
 
 //return the intersection of the two sets.
-struct fileSet interSet(const struct fileSet *s1, const struct fileSet *s2)
+set interSet(const set *s1, const set *s2)
 {
-	struct fileSet i = createFileSet();
+	set i = createFileSet();
 	int j;
 
 	//check if any file in s1 is also contained in s2.
@@ -74,9 +82,9 @@ struct fileSet interSet(const struct fileSet *s1, const struct fileSet *s2)
 }
 
 //return the difference of the two sets, i.e., s1 - s2.
-struct fileSet diffSet(struct fileSet *s1, struct fileSet *s2)
+struct fileSet diffSet(set *s1, set *s2)
 {
-	struct fileSet d = createFileSet();
+	set d = createFileSet();
 	int j;
 
 	//check if any file in s1 is also contained in s2.
@@ -89,7 +97,7 @@ struct fileSet diffSet(struct fileSet *s1, struct fileSet *s2)
 }
 
 //free the spaces used by the set.
-void cleanSet(struct fileSet *s)
+void cleanSet(set *s)
 {
 	//first free the space taken by the file names.
 	int i;
@@ -100,10 +108,26 @@ void cleanSet(struct fileSet *s)
 	free(s->fileName);
 }
 
-bool is_intersect(const struct fileSet *left, const struct fileSet *right) 
+bool is_intersect(const set *left, const set *right) 
 {
-	struct fileSet inter = interSet(left, right);
+	set inter = interSet(left, right);
 	bool flag = (inter.size != 0);
 	cleanSet(&inter);
 	return flag;
+}
+
+
+int indexOf(set* s, char* file)
+{
+	int i;
+
+	assert(file != NULL);
+	for (i = 0; i < s->size; i++) {
+		assert(s->fileName[i] != NULL);
+		if (strcmp(s->fileName[i], file) == 0)
+			return i;
+	}
+
+	return -1;
+
 }

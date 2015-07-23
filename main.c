@@ -1,5 +1,5 @@
 // UCLA CS 111 Lab 1 main program
-
+#define _GNU_SOURCE
 #include <errno.h>
 #include <error.h>
 #include <getopt.h>
@@ -11,12 +11,176 @@
 #include "queue.h"
 #include "vector.h"
 #include "command-internals.h"
+//#include "locker.h"
+#include "set.h"
 #include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+/////////////////////////////////////////////////////////////
 
 
+pthread_mutex_t mutex_lock = PTHREAD_MUTEX_INITIALIZER;
+typedef struct box 
+{
+	int n_reading;
+	bool is_wlocked;
+	char* filename;
+	int n;
+
+} box;
+
+typedef struct locker 
+{
+	box** storage;
+	int n_locks;
+	bool isChanged;
+} locker;
+
+typedef box* box_t;
+
+
+locker*
+create_locker(char** all_files, int n);
+
+bool 
+release_locks(locker* L, int* r_locker_id, int n, int* w_locker_id, int m);
+
+bool 
+get_locks(locker* L, int* r_locker_id, int n, int* w_locker_id, int m);
+
+
+
+locker*
+create_locker(char** all_files, int n)
+{
+	locker *L = (locker*) malloc(sizeof(locker));
+	assert(all_files != NULL);	
+
+	L->storage = (box_t*)malloc(sizeof(box_t) * n + 1);
+	L->storage[n] = NULL;
+	L->n_locks = n;
+	int i = 0;
+	for(i = 0; i < n; i++)
+	{
+		assert(all_files[i] != NULL);
+		L->storage[i] = (box_t)malloc(sizeof(box));
+		L->storage[i]->filename = (char*)malloc(strlen(all_files[i]));
+		strcpy(L->storage[i]->filename, all_files[i]);
+		L->storage[i]->n = i;
+		L->storage[i]->n_reading = 0;
+		L->storage[i]->is_wlocked = false;
+	}
+	L->isChanged = false;
+	return L;
+}
+#define set_read_lock(L, i,state) L->storage[i]->is_rlocked = state 
+#define set_write_lock(L, i, state) L->storage[i]->is_wlocked = state 
+#define read_lock(L, i) set_read_lock(L, i, true)
+#define write_lock(L, i) set_write_lock(L, i, true)
+#define read_unlock(L, i) set_read_lock(L,i, false) 
+#define write_unlock(L, i) set_write_lock(L,i, false)
+#define RLOCK(L, i) (L->storage[i]->n_reading != 0)
+#define WLOCK(L, i) (L->storage[i]->is_wlocked)
+
+bool 
+get_locks(locker* L, int* r_locker_id, int n, int* w_locker_id, int m) {
+	
+	int i = 0,j = 0;
+
+	// check reading locks
+	for(i = 0; i < n; i++) {
+		j = r_locker_id[i];
+		// if someone is writing, return false
+		if(WLOCK(L, j)) 
+		{
+			// unlock 
+			pthread_mutex_unlock(&mutex_lock);
+			return false;
+		}
+	}
+
+	// check writing locks
+	for(i = 0; i < m; i++) {
+		j = w_locker_id[i];
+		// if someone is reading or writing return false
+		if(WLOCK(L, j) || RLOCK(L, j)) 
+		{
+			// unlock
+			return false;
+		}
+	}
+
+	// lock reading lock
+	// doesn't allow other people to write
+	// increment number of user that is reading
+	for(i = 0; i < n; i++) {
+		j = r_locker_id[i];
+		write_lock(L, j);
+		L->storage[j]->n_reading++;
+	}
+
+	// lock writing lock
+	// doesn't allow other to write
+	// people who try to read have to check write lock
+	for(i = 0; i < m ;i++) {
+		j = w_locker_id[i];
+		write_lock(L, j);
+	}
+
+	// unlock
+	printf("acqouring locks\n");
+	for( i = 0; i < L->n_locks; i++) {
+		printf("%s: %d %d\n", L->storage[i]->filename, RLOCK(L, i), WLOCK(L, i));
+	}
+	return true;
+}
+
+bool 
+release_locks(locker* L, int* r_locker_id, int n, int* w_locker_id, int m) {
+	// LOCK
+	printf("waiting for mutex_locks in release_locks function\n");
+	pthread_mutex_lock(&mutex_lock);
+	int i = 0, j = 0;
+	// release read locks
+	for(i = 0; i < n; i++) {
+	    j = r_locker_id[i];
+
+		// decrement number of people that is reading
+		L->storage[j]->n_reading--;
+		
+		assert(L->storage[j]->n_reading >= 0);
+		// if no one is reading, allow other people to write
+		if(RLOCK(L, j) == false)
+			write_unlock(L, j);
+		else 
+			printf("reading queue: %d\n", L->storage[j] ->n_reading);
+
+	}
+	for(i = 0; i < m; i++) {
+		// release write lock
+	    j = w_locker_id[i];
+		write_unlock(L, j);
+
+	}
+	L->isChanged = true;
+	// UNLOCK
+	printf("releasing locks\n");
+	for( i = 0; i < L->n_locks; i++) {
+		printf("%s: %d %d\n", L->storage[i]->filename, RLOCK(L, i), WLOCK(L, i));
+	}
+	pthread_mutex_unlock(&mutex_lock);
+	return true;
+}
+
+
+
+
+/////////////////////////////////////////////////////////////
 static char const *program_name;
 static char const *script_name;
-
+locker *LOCKER;
 static void
 usage (void)
 {
@@ -28,43 +192,47 @@ get_next_byte (void *stream)
 {
   return getc (stream);
 }
-pthread_mutex_t running_mutex = PTHREAD_MUTEX_INITIALIZER;
-volatile bool is_any_thread_finished = false;
-vector* running_list;
 
 void*
 execute(void* cmd) {
-	execute_command((command_t)cmd, 0);
 
-	pid_t tid = gettid();
-	printf("pricess %d exit and tring to get lock\n", (int)tid);
-	pthread_mutex_lock(&running_mutex);
-	printf("pricess got lock\n");
-	find_and_delete(running_list, cmd);
-	is_any_thread_finished = true;
-	printf("process exited\n");
-	pthread_mutex_unlock(&running_mutex);
+	command_t cmd_t = (command_t)cmd;
+	// execute command
+	// execute_command(cmd_t, 0);
+	// get mutex lock and release locks in locker
+	// wait if other thread is doing something with locker
+	//release_locks(&LOCKER, cmd_t->in, cmd_t->n_in, cmd_t->out, cmd_t->n_out);
+	// release locks
+	//TODO check if locks are released	
+
+	// create new process and wait to exit
+	pid_t pid;	
+	if((pid = fork()) == -1) 
+		error(0,1,"fork error");
+	else if(pid == 0) {
+		execute_command(cmd_t, 0);
+		exit(0);
+	}
+	else {
+		// if pid exited
+		while(wait(&cmd_t->status) != pid)
+			;
+		release_locks(LOCKER, cmd_t->in, cmd_t->n_in, cmd_t->out, cmd_t->n_out);
+		// waiting to release locks
+		//release_locks(&LOCKER, cmd_t->in, cmd_t->n_in, cmd_t->out, cmd_t->n_out);
+		
+	}
+	
 	pthread_exit(0);
 	return NULL;
 }
-
-/*******************************************************************/
-/*******************************************************************/
-/*******************************************************************/
-/*******************************************************************/
-/*******************************************************************/
-/*******************************************************************/
-/*******************************************************************/
-/*******************************************************************/
-/*******************************************************************/
-/*******************************************************************/
 
 //build_I_O_set takes a command and puts all input to the set "in"
 //		and all outputs to the set "out".
 //
 //Important: in, out must be empty.
 void 
-build_I_O_set(command_t c, struct fileSet *in, struct fileSet *out)
+build_I_O_set(command_t c, set *in, set *out)
 {
 	//if the input command is a simple command,
 	//add the input and output if exist, and return.
@@ -79,7 +247,7 @@ build_I_O_set(command_t c, struct fileSet *in, struct fileSet *out)
 
 	if(c->type == SIMPLE_COMMAND) 
 	{
-		char** word = c->u.word;					
+		char** word = c->u.word;	
 		int i = 1;
 		while(word[i] != NULL) 
 		{
@@ -98,7 +266,7 @@ build_I_O_set(command_t c, struct fileSet *in, struct fileSet *out)
 
 	//else, the input is either and-or, pipe, or sequence,
 	//so recursively call this function to the two sub commands.
-	else if(c->type != SIMPLE_COMMAND)
+	else
 	{
 		build_I_O_set(c->u.command[0], in, out);
 		build_I_O_set(c->u.command[1], in, out);
@@ -106,12 +274,31 @@ build_I_O_set(command_t c, struct fileSet *in, struct fileSet *out)
 	return;
 }
 
-bool is_dependency(command_t cmd, struct fileSet* in, struct fileSet* out) {
-	if(is_intersect(&cmd->in, out) == true 
-			|| is_intersect(&cmd->out, out) == true 
-			|| is_intersect(&cmd->out, in) == true)
-		return true;
-	return false;
+void
+generate_file_indexes(command_t cmd,set* in, set *out, set *set) 
+{
+	int n = in->size;
+	int m = out->size;
+	int* inSet = (n == 0? NULL: (int*)malloc(sizeof(int) * n));
+	int* outSet = (m == 0? NULL: (int*)malloc(sizeof(int) * m));
+	
+	int i = 0;
+	for(i = 0; i < n; i++) {
+		if(in->fileName[i])
+			inSet[i] = indexOf(set, in->fileName[i]);
+		else
+			printf("i: %d\n", i);
+	}
+	for(i = 0; i < m; i++) {
+		if(out->fileName[i])
+			outSet[i] = indexOf(set, out->fileName[i]);
+		else
+			printf("i: %d\n", i);
+	}
+	cmd->in = inSet;
+	cmd->out = outSet;
+	cmd->n_in = n;
+	cmd->n_out = m;
 
 }
 
@@ -123,7 +310,6 @@ main (int argc, char **argv)
   int print_tree = 0;
   int time_travel = 0;
   program_name = argv[0];
-  running_list = vector_init();
   for (;;)
     switch (getopt (argc, argv, "pt"))
       {
@@ -147,8 +333,12 @@ main (int argc, char **argv)
 
   command_t last_command = NULL;
   command_t command;
-  
-  queue *waiting_queue = queue_init();
+ 
+  set S = createFileSet();
+  queue* waitingList = queue_init();
+
+  printf("=========================\n");
+  printf("dependency:\n");
   while ((command = read_command_stream (command_stream)))
     {
 		  if (print_tree)
@@ -158,91 +348,81 @@ main (int argc, char **argv)
 		}
 		  else
 		{
-			build_I_O_set(command, &command->in, &command->out);
-			queue_enqueue(waiting_queue, command);		
+			// insert all command into waiting list
+			queue_enqueue(waitingList, command);		
+			// union a set that includes all files
+			set in = createFileSet();
+			set out = createFileSet();
+			build_I_O_set(command, &in, &out);
+			unionSet(&S, &in);
+			unionSet(&S, &out);
+
+			int i = 0;
+			for(i = 0; i < in.size; i++) {
+				printf("in-%s ",  in.fileName[i]);
+			}
+			for(i = 0; i < out.size; i++) {
+				printf("out-%s ", out.fileName[i]);
+			}
+			printf("\n");
+			
+			generate_file_indexes(command, &in, &out, &S);
 		}
     }
+    printf("=========================\n");
 
-  struct fileSet inputSet = createFileSet();
-  struct fileSet outputSet = createFileSet();
-  int size = queue_sizeof(waiting_queue);
-  pthread_t threads[size];
+	// create lockers base on number of file required by all commands
+	LOCKER = create_locker(S.fileName, S.size);
+	
+  // create threads that for join purpose
+  pthread_t threads[waitingList->size];
+  printf("w=%d", waitingList->size);
   int i = 0;
-  int n_thread = 0;
-  while(queue_isempty(waiting_queue) == false) {
-
-	  // start with empty set
-	  cleanSet(&inputSet);
-	  cleanSet(&outputSet);
-	  inputSet = createFileSet();
-	  outputSet = createFileSet();
-	  
-
-	  // get all files that is using by running command
-	  // we do not want pthread modified running_list during the for loop
-	  // therefore, add lock
-	  pthread_mutex_lock(&running_mutex);
-	  for( i = 0; i < vector_sizeof(running_list); i++) {
-		      
-			command_t next_running = (command_t)vector_get(running_list, i);
-		    if(next_running->status != -1) {
-				vector_delete(running_list, i);
-				i--;
-			}
-			else {
-			  unionSet(&inputSet, &next_running->in);
-			  unionSet(&outputSet, &next_running->out);
-			}
+  	//int n_thread = 0;
+  // stop when all commands are executed
+  while(queue_isempty(waitingList) == false)
+  {
+  	int n_thread = 0;
+	  // doesn't allow other thread to exit
+	  // condition 1: n process are finished and release locks, m process are finished and not release locks yet
+	  // 		run process that have dependency with n process, this loop will finally release mutex locks
+	  // 		and wait for other thread to run, and other thread will get the lock and release the locks in locker
+	  // condition 2: all thread are finished but havn't released locks, this should not happen because wait 
+	  // 		function should block current thread until one thread is exit
+	  // condition 3: all thread are finished and release locks, this should run all command that have dependency
+	  // 		on those commands, and get new locks
+	  // condition 4: all commands are finished, queue should finished all commands and queue is empty, exit looping
+	  pthread_mutex_lock(&mutex_lock);
+	 
+	  // check all command in queue, if it is ready to run, create new threads and execute it, otherwise
+	  // put in queue again
+	  int queue_size = queue_sizeof(waitingList);
+	  for(i = 0; i < queue_size; i++){	
+		// get next command
+		command_t next;
+		next = (command_t)queue_dequeue(waitingList);
+		// this will not asking for locks again because  
+		if(get_locks(LOCKER, next->in, next->n_in, next->out, next->n_out)) {
+		   n_thread = n_thread + 1;
+		   pthread_create(&threads[n_thread], NULL, execute, next); 
+		}
+		else {
+			queue_enqueue(waitingList, next);
+		}
 	  }
-	  pthread_mutex_unlock(&running_mutex);
-
-	  // check dependency of all command in waiting list
-	  // this will run everytime there is command has finished.
-  	  size = queue_sizeof(waiting_queue);
-	  for(i = 0; i < size; i++) {
-		  command_t next = (command_t)queue_dequeue(waiting_queue);
-
-		  // if current command has dependency with previous commands
-		  // update inputSet and outputSet
-		  // put into the queue for next round
-		  // because the condition of for loop is not checking whether
-		  // queue is empty, we can just insert into the queue
-		  if(is_dependency(next, &inputSet, &outputSet) == true)
-		  {
-			  // waiting for next round
-			  queue_enqueue(waiting_queue, next);
-		  }
-		  else 
-		  {
-			// because we do not want other thread remove itself
-			// when I try to insert new item, add lock
-			pthread_mutex_lock(&running_mutex);
-			vector_insert(running_list, next);
-			pthread_mutex_unlock(&running_mutex);
-			pthread_create(&threads[n_thread++], NULL, &execute, next);
-		  }
-		  unionSet(&inputSet, &next->in);
-		  unionSet(&outputSet, &next->out);
-	   }
-
-	   // thread will modify this flag after it is done and remove its
-	   // command from running array
-//	   while(is_any_thread_finished == false && queue_isempty(waiting_queue) == false)
-//	   {
-//		   int ret = pthread_yield();
-//		   assert(ret == 0);
-//	   }
-	   //
-  		printf("some thread finished\n");
-		pthread_mutex_lock(&running_mutex);
-//	   is_any_thread_finished = false;
-		pthread_mutex_unlock(&running_mutex);
-   }
-
-  // waiting for all threads are finished
-  for(i = 0; i < n_thread; i++ )
-	pthread_join(threads[i], NULL);
-
+	  pthread_mutex_unlock(&mutex_lock);
+	  // if(queue_isempty(waitingList) == false)
+//		  pthread_yield();
+	  for(i = 0; i < n_thread; i++) {
+		  printf("pid=%d\n", i);
+		  pthread_join(threads[i], NULL);
+	  }
+  }
+  /*
+  for(i = 0; i < n_thread; i++) {
+	  pthread_join(threads[i], NULL);
+  }
+  */
 
   return print_tree || !last_command ? 0 : command_status (last_command);
 }
