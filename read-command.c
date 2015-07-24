@@ -43,27 +43,27 @@ struct node{
 	 pair* value;
 	 struct node * next; 
 };
-typedef struct queue{
+typedef struct _queue{
 	 struct node * head;
 	 struct node * tail;
 	 unsigned int size;
-} queue;
+} _queue;
 
-queue q_empty();
-bool isempty(const queue q);
-queue enqueue(pair* in, queue q);
-queue dequeue(queue q);
-queue destroy(queue q);
-pair* next(const queue q);
+_queue q_empty();
+bool isempty(const _queue q);
+_queue enqueue(pair* in, _queue q);
+_queue dequeue(_queue q);
+_queue destroy(_queue q);
+pair* next(const _queue q);
 pair* b_pair(token_type key, char* value);
 
 /*********************************************************************/
-command_t read_seq(command_t holder, queue *s);
-command_t read_subshell( queue *s);
-command_t read_simple_command( queue *s);
-command_t read_single_command( queue s);
-command_t read_pipeline(command_t holder, queue *s);
-command_t read_andor(command_t holder, queue *s);
+command_t read_seq(command_t holder, _queue *s);
+command_t read_subshell( _queue *s);
+command_t read_simple_command( _queue *s);
+command_t read_single_command( _queue s);
+command_t read_pipeline(command_t holder, _queue *s);
+command_t read_andor(command_t holder, _queue *s);
 /*********************************************************************/
 struct command_stream {
 	command_t root;				// root of tree
@@ -73,10 +73,10 @@ struct command_stream {
 	char* buffer;				// start location of buffer, deallocate purpose
 };
 /*********************************************************************/
-command_stream_t build_token_tree(queue);
-queue partition(char* input);
+command_stream_t build_token_tree(_queue);
+_queue partition(char* input);
 void lineError(const char*);
-void load_in_out(queue*, command_t);
+void load_in_out(_queue*, command_t);
 /*********************************************************************/
 
 
@@ -91,7 +91,7 @@ void load_in_out(queue*, command_t);
  * 		not modify the command_stream
  */
 token_type 
-next_token_type(queue* s)
+next_token_type(_queue* s)
 {
 	while(isempty(*s) == false && next(*s)->key == BACK_SLASH) {
 		_line++;
@@ -115,7 +115,7 @@ next_token_type(queue* s)
  * 		false otherwise
  */
 bool 
-isWORDS(queue* s) 
+isWORDS(_queue* s) 
 {
 	while(next(*s) != NULL) {
 		
@@ -144,7 +144,7 @@ isWORDS(queue* s)
  * eat_newline
  * desc: eats all the continous new_line token at the top of queue
  */
-void eat_newline(queue *s) {
+void eat_newline(_queue *s) {
 	while(next(*s) != NULL && next(*s)->key == NEW_LINE) {
 		// count current line number, for error detector
 		_line++;
@@ -165,7 +165,7 @@ void eat_newline(queue *s) {
  * 		the dequeue should handle by user
  */
 bool
-isSEQ(queue *s) 
+isSEQ(_queue *s) 
 {
 	token_type type;
 	// have not reached the end of file
@@ -207,7 +207,11 @@ malloc_cmd()
 	command_t cmd = (command_t)checked_malloc(sizeof(struct command));
 	cmd->output = NULL;
 	cmd->input = NULL;
-	cmd->status = 0;
+	cmd->in = NULL;
+	cmd->n_in = 0;
+	cmd->out = NULL;
+	cmd->n_out = 0;
+	cmd->status = -1;
 	return cmd;
 }
 
@@ -226,7 +230,7 @@ malloc_cmd()
  * 		this will recursively call read_andor function and itself
  */
 command_t 
-read_seq(command_t holder, queue *s)
+read_seq(command_t holder, _queue *s)
 {
 	eat_newline(s);
 	
@@ -289,7 +293,7 @@ read_seq(command_t holder, queue *s)
  * 		inside of bracket. if right bracket is not exist, throw exception
  */
 command_t 
-read_subshell(queue *s) 
+read_subshell(_queue *s) 
 {
 	// new_line can appear before subshell, eat them
 	eat_newline(s);
@@ -343,7 +347,7 @@ read_subshell(queue *s)
  * 		left associative
  */
 command_t 
-read_pipeline(command_t holder, queue* s) 
+read_pipeline(command_t holder, _queue* s) 
 {
 	eat_newline(s);
 	// beginning of current pipeline 
@@ -398,7 +402,7 @@ read_pipeline(command_t holder, queue* s)
  * 		left associative
  */
 command_t 
-read_andor(command_t holder, queue *s) 
+read_andor(command_t holder, _queue *s) 
 {
 	eat_newline(s);
 	// beginning of current complete command
@@ -536,7 +540,7 @@ command_t* prefix_traversal(command_t root, size_t *i)
  * 						with iterator
  *
  */
-command_stream_t build_token_tree(queue Q) {
+command_stream_t build_token_tree(_queue Q) {
 
 	//TODO MEMORY ALLOCATED
 	//free location: NULL 
@@ -590,7 +594,7 @@ make_command_stream (int (*get_next_byte) (void *),
 	}
 	buffer[n] = '\0';
 
-	queue Q;
+	_queue Q;
 	// TODO memory allocated, MEMORY LEAKING
 	// free location: NO WHERE, the start pointer is inside of partition function
 	// maybe we can saved it in queue, or pass the address of that location by
@@ -630,10 +634,10 @@ read_command_stream (command_stream_t s)
  * q_empty
  * desc: return an empty initialized queue
  */
-queue 
+_queue 
 q_empty()
 {
-	 queue q;
+	 _queue q;
 	 q.head = q.tail = NULL;
 	 q.size = 0;
 	 return q;
@@ -643,7 +647,7 @@ q_empty()
  * is empty
  * desc: check if empty
  */
-bool isempty(const queue q)
+bool isempty(const _queue q)
 {
 	 if(q.head == NULL)
 	   return true;
@@ -663,7 +667,7 @@ bool isempty(const queue q)
  * 		the value that is passed in should already allocated and initialized	
  * 		
  */
-queue enqueue(pair* in, queue q)
+_queue enqueue(pair* in, _queue q)
 {
  // allocate memory for node
  struct node * item = (struct node *)checked_malloc(sizeof(struct node));
@@ -697,7 +701,7 @@ queue enqueue(pair* in, queue q)
  * 		and return value of node without free it, and this function
  * 		handles the free of value
  */
-queue destroy(queue q)
+_queue destroy(_queue q)
 {
 	return dequeue(q);
 }
@@ -715,7 +719,7 @@ queue destroy(queue q)
  * 		and return first nodes value without free it
  * 		user will handle the deallocation of memory of value
  */
-queue dequeue(queue q)
+_queue dequeue(_queue q)
 {
 	struct node * temp;
 	// detect empty situation
@@ -746,7 +750,7 @@ queue dequeue(queue q)
  * 		return next
  *
  */
-pair* next(const queue q)
+pair* next(const _queue q)
 {
 	if(isempty(q) == false)
 	 	return q.head->value;
@@ -848,7 +852,7 @@ int isRegular(char input)
  * 		TODO thinking to passing in a char** because this function
  * 			allocates new memory for queue, and previous memory is wasted
  */
-queue partition(char* input)
+_queue partition(char* input)
 {
   char* current = input;
   int Status_comment = 0, Status_backslash = 0;
@@ -966,7 +970,7 @@ queue partition(char* input)
     }
 
   //partition and put them in queue
-  queue tokenQueue = q_empty();
+  _queue tokenQueue = q_empty();
   char* pch;
   token_type key;
   pch = strtok(tmpStr, " ");
@@ -1015,7 +1019,7 @@ queue partition(char* input)
 
 
 void 
-load_in_out(queue *s, command_t cmd) {
+load_in_out(_queue *s, command_t cmd) {
 
 	// if < or > token has reached, assign input or output value to struct
 	token_type type = next_token_type(s);
@@ -1070,7 +1074,7 @@ load_in_out(queue *s, command_t cmd) {
  * 		token into struct
  */
 command_t 
-read_simple_command( queue *s) 
+read_simple_command( _queue *s) 
 {
 	// because new line can only appear at beginning of simple command or
 	// sub shell command, therefore, eats all the newline at this point is 
@@ -1088,7 +1092,7 @@ read_simple_command( queue *s)
 	
 	command_t cmd = malloc_cmd();
 	int n = 0;
-	queue words = q_empty();
+	_queue words = q_empty();
 
 	// eats seequence of words before special character
 	while(isWORDS(s))
@@ -1143,3 +1147,4 @@ read_simple_command( queue *s)
 		return NULL;
 	}
 }
+int command_t_cmp(command_t left, command_t right) {return !(left == right);}

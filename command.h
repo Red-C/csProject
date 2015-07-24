@@ -4,12 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "alloc.h"
-#include "command-internals.h"
+#include <stdbool.h>
 // UCLA CS 111 Lab 1 command interface
 
-typedef int bool;
-#define false 0
-#define true 1
 typedef struct command *command_t;
 typedef struct command_stream *command_stream_t;
 
@@ -34,6 +31,6 @@ void execute_command (command_t, int);
    Wait for the command, if it is not already finished.  */
 int command_status (command_t);
 
-
+int command_t_cmp(command_t left, command_t right);
 
 #endif

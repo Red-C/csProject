@@ -83,7 +83,7 @@ EOF
 chmod 777 test.sh
 ./test.sh > test.exp 
 
-../timetrash -t test.sh >test.out 2>test.err || (echo "timetrash not running" && false) || exit
+../timetrash test.sh >test.out 2>test.err || (echo "timetrash not running" && false) || exit
 
 diff -u test.exp test.out || (echo "diff unsuccessful" && false) || exit
 

@@ -1,47 +1,69 @@
-// UCLA CS 111 Lab 1 command execution
-
 #include "command.h"
 #include "command-internals.h"
-
-#include <error.h>
+#include "alloc.h"
 #include <unistd.h>
-#include <fcntl.h>
+#include <error.h>
 #include <stdio.h>
 #include <sys/wait.h>
-#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+
+/*******************************************************/
+void execute_simple_command ( command_t c);
+void execute_pipe_command ( command_t c);
+void execute_andor_command( command_t c);
+void execute_simple_command ( command_t c);
+void execute_subshell(command_t c);
+void execute_sequence(command_t c);
+int brancher(command_t c);
+/*******************************************************/
 
 
-/* FIXME: You may need to add #include directives, macro definitions,
-   static function definitions, etc.  */
-
-int execute_simple_command ( command_t c);
-int execute_pipe_command ( command_t c);
-int execute_andor_command( command_t c);
-int execute_simple_command ( command_t c);
-int execute_subshell(command_t c);
-
-/**
- * command_status
- */
+void execute_command(command_t c, int time_travel) {
+	if(time_travel == 0)
+		brancher(c);
+	else
+		brancher(c);
+}
 int
 command_status (command_t c)
 {
   return c->status;
 }
 
+
 /**
- * execute_command
- * in:
- * 		c (command_t) : a complete command that is going to execute
- * 		time_travel (int):
+ * brancher
+ * in: 
+ * 		c: current command that is going to execute
  *
- * descr: execute a complete command
+ * descr:
+ * 		brancher will jump to the function base on type of c
  */
-void
-execute_command (command_t c, int time_travel)
+int
+brancher(command_t c)
 {
-	int exit_status = time_travel;
-	exit_status = execute_andor_command(c);
+	switch(c->type) {
+	case SIMPLE_COMMAND:
+		execute_simple_command(c);
+		break;
+	case SUBSHELL_COMMAND:
+		execute_subshell(c);
+		break;
+	case PIPE_COMMAND:
+		execute_pipe_command(c);
+		break;
+	case AND_COMMAND:
+	case OR_COMMAND:
+		execute_andor_command(c);
+		break;
+	case SEQUENCE_COMMAND:
+		execute_sequence(c);
+		break;
+	default:
+		error(0,1,"unknow type");
+	}
+	return c->status;
 }
 
 /**
@@ -49,24 +71,98 @@ execute_command (command_t c, int time_travel)
  * in:
  * 		c (command_t) : the simple command that is going to execute
  * out: 
- * 		int: output file stream descriptor
+ * 		exit status of c
  *
- * descr: this function is called by execute_pipe_command, 
- * 		it execute a simple command.
+ * descr: call by brancher, doesnt have to test if command is simple
+ * 		it is already checked in brancher
  *
  * Error:
- * 		the command passed in is not a simple command
  *		fork unsuccessful
  *		output/input file open unsuccessful
  *		command execute unsuccessful by execvp
  */
-int
-execute_simple_command ( command_t c)
+void
+execute_simple_command(command_t c)
 {
+  pid_t p = fork();
+  if(p==0)
+  {
+		// assign input stream if input file exist 
+		if(c->input != NULL)
+		{
+			int fd = open(c->input, O_RDONLY);
+			if(fd < 0)
+				error(0,1, "invalid input file");
+			dup2(fd, 0);
+			close(fd);
+				
+		}
+		// assign output stream if output file exist
+		if(c->output != NULL)
+		{
+			// assign mode '666' to the output file, create if not exist
+			int fd = open(c->output, O_WRONLY|O_CREAT|O_TRUNC
+					,S_IRUSR|S_IWUSR|S_IWGRP|S_IRGRP|S_IROTH|S_IWOTH);
+			if(fd < 0) {
+				error(0,1, "invalid output file");
+				exit(-1);
+			}
+			dup2(fd, 1);
+			close(fd);
+		}
+      execvp(c->u.word[0],c->u.word);
+    }
+  else if(p >0)
+      waitpid(p,&c->status,0);
+  else
+    {
+		error(0,1, "fork error");
+      	exit(-1);
+    }  
+}
 
+/**
+ * execute_andor_command
+ * in:
+ * 		c(command_t):	andor command to be execute
+ * descr: 
+ * 		recursive call by calling brancher
+ */
+void
+execute_andor_command(command_t c)
+{
+  // execute_left
+  c->status = brancher(c->u.command[0]);
+  
+  // execute_right
+  if(c->type == OR_COMMAND && c->status) // a || b
+    {
+      c->status = brancher(c->u.command[1]);
+    }
+  else if(c->type == AND_COMMAND && !c->status) // a && b
+    {
+      c->status = brancher(c->u.command[1]);
+    }
+  
+}
+
+void
+execute_sequence(command_t c)
+{
+  c->status = brancher(c->u.command[0]);
+  c->status = brancher(c->u.command[1]);
+}
+
+void
+execute_subshell(command_t c)
+{
+	int input_fd;
+	int output_fd;
 	// assign input stream if input file exist 
 	if(c->input != NULL)
 	{
+		// save input file descriptor, for close purpose
+		input_fd = dup(0);
 		int fd = open(c->input, O_RDONLY);
 		if(fd < 0)
 			error(0,1, "invalid input file");
@@ -77,36 +173,32 @@ execute_simple_command ( command_t c)
 	// assign output stream if output file exist
 	if(c->output != NULL)
 	{
+		// save output file descriptor, for close purpose
+		output_fd = dup(1);
+		
 		// assign mode '666' to the output file, create if not exist
 		int fd = open(c->output, O_WRONLY|O_CREAT|O_TRUNC
 				,S_IRUSR|S_IWUSR|S_IWGRP|S_IRGRP|S_IROTH|S_IWOTH);
-		if(fd < 0)
+		if(fd < 0) {
 			error(0,1, "invalid output file");
+			exit(-1);
+		}
 		dup2(fd, 1);
 		close(fd);
 	}
-
-	if(c->type == SUBSHELL_COMMAND)
-	{
-		// subshell has same priority as simple command
-		execute_subshell(c);
-		// don't know why, when execute_subshell exit with 256
-		// the execute_pipe_command function catches 0
-		exit(c->status != 0);
-	}
-	else
-	{
-		// execute command, this will replace current block of code, 
-		// and return status if it is exit
-		execvp(c->u.word[0], c->u.word);
-		// this should not be reached if command execute successful
-		// because the process should be replace by the command
-		// if this is reached, it means the command can not be found
-		// in bash folder, ie. history
-		fprintf(stderr, "%s: command not found\n", c->u.word[0]);
-		exit(1);
-	}
-
+	c->status = brancher(c->u.subshell_command);
+  if(c->input != NULL)
+    {
+	  // assign stdin back to main process 
+      dup2(input_fd,STDIN_FILENO);
+      close(input_fd);
+    }
+  if(c->output != NULL)
+    {
+	  // assign stdout back to main process 
+      dup2(output_fd,STDOUT_FILENO);
+      close(output_fd);
+    }
 }
 
 
@@ -116,18 +208,13 @@ execute_simple_command ( command_t c)
  * in: 
  * 		c(command_t): pipe command that is going to execute
  *
- * out: 
- * 		int: output stream file descriptor
  *	
  * descr:
- * 		this will be called by execute_pipe_command
- * 		it returns the output stream file descriptor, however,
- * 		it will return -1 if there is any error with execution.
- * 		please check c->status or -1 return value to catch the error 
- * 		state.
+ * 		this will be called by brancher
  *
  */
-int execute_pipe_helper(command_t c, int i)
+void
+execute_pipe_command(command_t c)
 {
 	
 	// create pipe between parent and child
@@ -136,176 +223,33 @@ int execute_pipe_helper(command_t c, int i)
 	if(pipe(fds) == -1)
 		error(0,1,"pipe error");
 
-	if(i == 0)
-		dup2(1,fds[1]);
-	// end of recursion, the most left child of tree
-	if(c->type != PIPE_COMMAND) {
-		// end of recursion
-		if(c->type != SIMPLE_COMMAND && c->type != SUBSHELL_COMMAND)
-			  error(0,1, "non simple command  or subshell command has called execute simple");
+	pid_t pid;
+	if((pid = fork()) == -1)
+		  error(0,1,"fork error");
 
-		pid_t pid;
-		if((pid = fork()) == -1)
-			  error(0,1,"fork error");
+	// child process
+	else if(pid == 0) {
+		close(fds[0]);
+		// redirect stdout
+		dup2(fds[1], 1);
+		close(fds[1]);
+		brancher(c->u.command[0]);
+		// c->status=c->u.command[0]->status;
+		// this can be deleted
+		exit(0);
 
-		// child process
-		else if(pid == 0) {
-			close(fds[0]);
-			// redirect stdout
-			dup2(fds[1], 1);
-			close(fds[1]);
-			execute_simple_command(c);
-			// this can be deleted
-			exit(c->status != 0);
-
-		}
-		else {
-			// waiting for child process exit
-			while(wait(&c->status) != pid)
-				;
-			close(fds[1]);
-			if(c->status != 0) {
-				   close(fds[0]);
-				   return -1;
-			}
-			// return output stream 
-			return fds[0];
-  		}
 	}
 	else {
-		command_t left = c->u.command[0];
-		command_t right = c->u.command[1];
-
-		// recursive call left child command, redirect input stream to the
-		// output of previous command
-		int fd_in = execute_pipe_helper(left,1);
-		// check return status, stop recursion if error occur
-		pid_t pid;	
-		if((pid = fork()) == 0)
-		{	// child process	
-			// redirect input fd to fd_i
-			dup2(fd_in, 0);
-			close(fd_in);
-			close(fds[0]);
-			// output stream	
-			dup2(fds[1], 1);
-			close(fds[1]);
-			// redirect output stream
-			execute_simple_command(right);
-			// exit with exit status of right command
-			// return non zero value if execute unsuccessful
-			// zero if successful
-			exit(right->status != 0);
-			
-		}
-		else
-		{	// parent process
-			// wait for child process return
-			// receive exit status and save it into c->status
-			// the upper level of recursive will check the status if zero or not
-			while(wait(&c->status) != pid)
-				;
-			// close fd_in
-			close(fd_in);
-			close(fds[1]);
-			if(c->status != 0)
-			{
-				close(fds[0]);
-				return -1;
-			}
-			// return output stream fd
-			return fds[0];
-		}
-	}
-	// return fds2
-	return -1;
-}
-
-/**
- * execute_pipe_command
- * in:
- * 		c (command_t): pipe command to execute
- * out:
- * 		exit status of pipe
- *
- * 	descr: execute a pipe command, return status to execute andor function
- *
- */
-int execute_pipe_command(command_t c)
-{
-	// save output stream of last command
-	int fd = execute_pipe_helper(c,0);
-	if(c->status == 0) {
-		int n = 0;
-		char buffer[1024];
-		// print output of last command in stdout
-		while((n = read(fd, buffer, 1024)) != 0)
-			write(STDOUT_FILENO, buffer, n);
-			
-	}
-	// return status for andor uses
-	return c->status;
-}
-
-/**
- * execute_andor_command
- * in:
- * 		c(command_t):	andor command to be execute
- * out: 
- * 		exit status
- * descr: 
- * 		recursive call this function with left associative
- */
-int execute_andor_command(command_t c) {
-	// end of recursive
-	if(c->type != AND_COMMAND && c->type != OR_COMMAND) {
-		execute_pipe_command(c);
-		// status of command
-		return c->status;
-	}
-	else {
-		command_t left = c->u.command[0];
-		command_t right = c->u.command[1];
-		if(c->type == AND_COMMAND) 
-		{
-			// !(left && right)
-			return !(((c->status = execute_andor_command(left)) == 0) 
-				&& ((c->status = execute_andor_command(right)) == 0));
-		}
-		else
-			// !(left || right)
-			return !(((c->status = execute_andor_command(left)) == 0) 
-				|| ((c->status = execute_andor_command(right)) == 0));
+		// waiting for child process exit
+		waitpid(pid, &c->status, 0);
+		dup2(fds[0], 0);
+		// close pipe
+		close(fds[1]);
+		close(fds[0]);
 		
-	}
-}
 
-/**
- * execute_seq_command
- * descr: subshell uses this only
- */
-int execute_subshell_helper(command_t c) {
-	if(c->type != SEQUENCE_COMMAND){
-		c->status = execute_andor_command(c);
+		// execute right 
+      c->status = brancher(c->u.command[1]);
 	}
-	else {
-		execute_subshell_helper(c->u.command[0]);
-		c->status = execute_andor_command(c->u.command[1]);
-
-	}
-	return c->status;
-}
-/**
- * execute_subshell
- * descr: execute commands within subshell in sequence
- *
- */
-int execute_subshell(command_t c) {
-	if(c->type != SUBSHELL_COMMAND)
-		error(0,1,"non subshell command has called execute subshell");
-
-	command_t cmd = c->u.subshell_command;
-	c->status = execute_subshell_helper(cmd);
-	return c->status;
 }
 
