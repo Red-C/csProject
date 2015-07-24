@@ -6,15 +6,18 @@
 #include <string.h>
 #include <pthread.h>
 #include <stdio.h>
+#include "vector.h"
 
+extern pthread_mutex_t mutex_lock;
 
-pthread_mutex_t mutex_lock = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct box 
 {
 	volatile int n_reading;
 	bool is_wlocked;
 	char* filename;
+	vector* r_holder_list;
+	void* w_holder;
 	int n;
 
 } box;
@@ -28,14 +31,14 @@ typedef struct locker
 typedef box* box_t;
 
 
-locker
-create_locker(char** all_files, int n);
+locker create_locker(char** all_files, int n);
+bool release_locks(void* cmd, locker* L, int* r_locker_id, int n, 
+		int* w_locker_id, int m,
+		int (*)(void*, void*));
 
-bool 
-release_locks(locker* L, int* r_locker_id, int n, int* w_locker_id, int m);
-
-bool 
-get_locks(locker* L, int* r_locker_id, int n, int* w_locker_id, int m);
-
+bool get_locks(void* cmd, locker* L, int* r_locker_id, int n, 
+		int* w_locker_id, int m,
+		int (*)(void*, void*));
 void print_locker(locker* L);
+
 #endif

@@ -1147,3 +1147,4 @@ read_simple_command( _queue *s)
 		return NULL;
 	}
 }
+int command_t_cmp(command_t left, command_t right) {return !(left == right);}

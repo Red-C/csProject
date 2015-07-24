@@ -31,6 +31,6 @@ void execute_command (command_t, int);
    Wait for the command, if it is not already finished.  */
 int command_status (command_t);
 
-
+int command_t_cmp(command_t left, command_t right);
 
 #endif

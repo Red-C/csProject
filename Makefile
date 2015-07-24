@@ -16,7 +16,10 @@ TIMETRASH_SOURCES = \
   read-command.c \
   print-command.c \
   set.c \
-  execute-command.c
+  execute-command.c\
+  locker.c\
+  vector.c\
+  queue.c
 TIMETRASH_OBJECTS = $(subst .c,.o,$(TIMETRASH_SOURCES))
 
 DIST_SOURCES = \
