@@ -1,0 +1,7 @@
+echo a b; 
+echo a c;
+echo c d;
+echo a b c d > c && echo a b c d;
+
+
+
