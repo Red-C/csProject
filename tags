@@ -90,6 +90,7 @@ command_queue	read-command.c	/^	command_t* command_queue;	\/\/ complete commands
 command_status	execute-command.c	/^command_status (command_t c)$/;"	f
 command_status	execute-command_temp.c	/^command_status (command_t c)$/;"	f
 command_status	execute-command_yi.c	/^command_status (command_t c)$/;"	f
+command_status	new_execute_command.c	/^command_status (command_t c)$/;"	f
 command_stream	read-command.c	/^struct command_stream {$/;"	s	file:
 command_stream_t	command.h	/^typedef struct command_stream *command_stream_t;$/;"	t	typeref:struct:command_stream
 command_t	command.h	/^typedef struct command *command_t;$/;"	t	typeref:struct:command
@@ -106,26 +107,33 @@ eat_newline	read-command.c	/^void eat_newline(_queue *s) {$/;"	f
 enqueue	read-command.c	/^_queue enqueue(pair* in, _queue q)$/;"	f
 exec_and	execute-command.c	/^exec_and(command_t comm , int init)$/;"	f
 exec_and	execute-command_yi.c	/^exec_and(command_t comm , int init)$/;"	f
-exec_or	execute-command.c	/^exec_or(command_t comm, int init)$/;"	f
+exec_and	new_execute_command.c	/^exec_and(command_t comm , int init)$/;"	f
 exec_or	execute-command_yi.c	/^exec_or(command_t comm, int init)$/;"	f
+exec_or	new_execute_command.c	/^exec_or(command_t comm, int init)$/;"	f
 exec_pipe	execute-command.c	/^exec_pipe(command_t comm, int init)$/;"	f
 exec_pipe	execute-command_yi.c	/^exec_pipe(command_t comm, int init)$/;"	f
+exec_pipe	new_execute_command.c	/^exec_pipe(command_t comm, int init)$/;"	f
 exec_seq	execute-command.c	/^exec_seq(command_t comm , int init)$/;"	f
 exec_seq	execute-command_yi.c	/^exec_seq(command_t comm , int init)$/;"	f
-exec_simple	execute-command.c	/^exec_simple( command_t comm, int init) \/\/ just put init as 0$/;"	f
+exec_seq	new_execute_command.c	/^exec_seq(command_t comm , int init)$/;"	f
+exec_simple	execute-command.c	/^exec_simple( command_t c, int init) \/\/ just put init as 0$/;"	f
 exec_simple	execute-command_yi.c	/^exec_simple( command_t comm, int init) \/\/ just put init as 0$/;"	f
 exec_sub	execute-command.c	/^exec_sub(command_t comm, int init)$/;"	f
 exec_sub	execute-command_yi.c	/^exec_sub(command_t comm, int init)$/;"	f
+exec_sub	new_execute_command.c	/^exec_sub(command_t comm, int init)$/;"	f
 execute	main.c	/^execute(void* cmd) {$/;"	f
 execute	main_2.c	/^execute(void* cmd) {$/;"	f
 execute	main_temp.c	/^execute(void* cmd) {$/;"	f
+execute_andor_command	execute-command.c	/^execute_andor_command(command_t c, int init)$/;"	f
 execute_andor_command	execute-command_temp.c	/^int execute_andor_command(command_t c) {$/;"	f
 execute_command	execute-command.c	/^execute_command (command_t c, int time_travel)$/;"	f
 execute_command	execute-command_temp.c	/^execute_command (command_t c, int time_travel)$/;"	f
 execute_command	execute-command_yi.c	/^execute_command (command_t c, int time_travel)$/;"	f
+execute_command	new_execute_command.c	/^execute_command (command_t c, int time_travel)$/;"	f
 execute_pipe_command	execute-command_temp.c	/^int execute_pipe_command(command_t c)$/;"	f
 execute_pipe_helper	execute-command_temp.c	/^int execute_pipe_helper(command_t c, int i)$/;"	f
 execute_simple_command	execute-command_temp.c	/^execute_simple_command ( command_t c)$/;"	f
+execute_simple_command	new_execute_command.c	/^execute_simple_command( command_t c)$/;"	f
 execute_subshell	execute-command_temp.c	/^int execute_subshell(command_t c) {$/;"	f
 execute_subshell_helper	execute-command_temp.c	/^int execute_subshell_helper(command_t c) {$/;"	f
 fileName	set.h	/^	char** fileName; \/\/an array of pointers to file names.$/;"	m	struct:fileSet

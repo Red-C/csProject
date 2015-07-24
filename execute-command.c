@@ -1,315 +1,255 @@
-// UCLA CS 111 Lab 1 command execution
-//  team group
-//  Zhen Feng UID: 904499798
-//  Yi Wang UID: 504426290  
 #include "command.h"
 #include "command-internals.h"
 #include "alloc.h"
-#include <stdio.h>
-#include <error.h>
 #include <unistd.h>
-#include <stdlib.h>
+#include <error.h>
+#include <stdio.h>
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <fcntl.h>
-#include <string.h>
-#include <math.h>
-#include <pthread.h>
-/* FIXME: You may need to add #include directives, macro definitions,
-   static function definitions, etc.  */
 
+/*******************************************************/
+void execute_simple_command ( command_t c);
+void execute_pipe_command ( command_t c);
+void execute_andor_command( command_t c);
+void execute_simple_command ( command_t c);
+void execute_subshell(command_t c);
+void execute_sequence(command_t c);
+int brancher(command_t c);
+/*******************************************************/
+
+
+void execute_command(command_t c, int time_travel) {
+	if(time_travel == 0)
+		brancher(c);
+	else
+		brancher(c);
+}
 int
 command_status (command_t c)
 {
   return c->status;
 }
 
-struct list_word
-{
-  char* word;
-  struct list_word* next;
-};
 
-void
-exec_simple( command_t comm, int init) // just put init as 0
+/**
+ * brancher
+ * in: 
+ * 		c: current command that is going to execute
+ *
+ * descr:
+ * 		brancher will jump to the function base on type of c
+ */
+int
+brancher(command_t c)
 {
-  int re;
-  int filefrom;
-  int filedesc;
-  int stat;
-  if (init != 1)
-    {fprintf(stderr," exec_simple put at the wrong place");
-    exit(-1);}
+	switch(c->type) {
+	case SIMPLE_COMMAND:
+		execute_simple_command(c);
+		break;
+	case SUBSHELL_COMMAND:
+		execute_subshell(c);
+		break;
+	case PIPE_COMMAND:
+		execute_pipe_command(c);
+		break;
+	case AND_COMMAND:
+	case OR_COMMAND:
+		execute_andor_command(c);
+		break;
+	case SEQUENCE_COMMAND:
+		execute_sequence(c);
+		break;
+	default:
+		error(0,1,"unknow type");
+	}
+	return c->status;
+}
+
+/**
+ * execute_simple_command
+ * in:
+ * 		c (command_t) : the simple command that is going to execute
+ * out: 
+ * 		exit status of c
+ *
+ * descr: call by brancher, doesnt have to test if command is simple
+ * 		it is already checked in brancher
+ *
+ * Error:
+ *		fork unsuccessful
+ *		output/input file open unsuccessful
+ *		command execute unsuccessful by execvp
+ */
+void
+execute_simple_command(command_t c)
+{
   pid_t p = fork();
-  if(p==0)//child
-    {
-      if(comm->input) //input
-	{
-	  filefrom = open(comm->input,O_RDONLY);
-	  if(filefrom < 0)
-	    {
-	      fprintf(stderr,"problem with input");
-	      exit(-1);
-	    }
-	  re=dup2(filefrom,STDIN_FILENO);
-	  if(re<0)
-	    {
-	      fprintf(stderr,"can not read from file");
-	      exit(-1);
-	    }
-	  close(filefrom);
-	}
-      if(comm->output) // has output to a file
-	{
-	  filedesc = open(comm->output,O_CREAT | O_TRUNC | O_WRONLY,0777);
-	  if(filedesc < 0)
-	    {
-	      fprintf(stderr,"problem with output");
-	      exit(-1);
-	    }
-	  re=dup2(filedesc,STDOUT_FILENO);
-	  if(re<0)
-	    {
-	      fprintf(stderr,"can not write to file");
-	      exit(-1);
-	    }
-	  close(filedesc);
-	}
-      /* char * ha;
-      int i=0;
-      for(i=0;ha!=NULL;i++)
-      {
-       ha=comm->u.word[i];
-	  printf("omg is here %s \n",ha);
-	  }*/
-      execvp(comm->u.word[0],comm->u.word);
+  if(p==0)
+  {
+		// assign input stream if input file exist 
+		if(c->input != NULL)
+		{
+			int fd = open(c->input, O_RDONLY);
+			if(fd < 0)
+				error(0,1, "invalid input file");
+			dup2(fd, 0);
+			close(fd);
+				
+		}
+		// assign output stream if output file exist
+		if(c->output != NULL)
+		{
+			// assign mode '666' to the output file, create if not exist
+			int fd = open(c->output, O_WRONLY|O_CREAT|O_TRUNC
+					,S_IRUSR|S_IWUSR|S_IWGRP|S_IRGRP|S_IROTH|S_IWOTH);
+			if(fd < 0) {
+				error(0,1, "invalid output file");
+				exit(-1);
+			}
+			dup2(fd, 1);
+			close(fd);
+		}
+      execvp(c->u.word[0],c->u.word);
     }
   else if(p >0)
-    {
-      waitpid(p,&stat,0);
-      comm->status=stat;
-    }
+      waitpid(p,&c->status,0);
   else
     {
-      fprintf(stderr,"can not create process");
-      exit(-1);
+		error(0,1, "fork error");
+      	exit(-1);
     }  
 }
 
+/**
+ * execute_andor_command
+ * in:
+ * 		c(command_t):	andor command to be execute
+ * descr: 
+ * 		recursive call by calling brancher
+ */
 void
-exec_or(command_t comm, int init)
+execute_andor_command(command_t c)
 {
-  execute_command (comm->u.command[0], 0);
-  comm->status=comm->u.command[0]->status;
-  init =  comm->status ;
-  if(init) //run when first command fail;
+  // execute_left
+  c->status = brancher(c->u.command[0]);
+  
+  // execute_right
+  if(c->type == OR_COMMAND && c->status) // a || b
     {
-      execute_command(comm->u.command[1],0);
-      comm->status=comm->u.command[1]->status;
+      c->status = brancher(c->u.command[1]);
     }
-  /* else
-     {
-       printf("the first command is true");
-       }*/
+  else if(c->type == AND_COMMAND && !c->status) // a && b
+    {
+      c->status = brancher(c->u.command[1]);
+    }
   
 }
 
 void
-exec_and(command_t comm , int init)
+execute_sequence(command_t c)
 {
-  execute_command (comm->u.command[0], 0);
-  comm->status=comm->u.command[0]->status;
-  init = comm->status;
-  if(!init)//run when first command true;
-    {
-      execute_command(comm->u.command[1],0);
-      comm->status=comm->u.command[1]->status;
-    }
-  /*else
-    {
-      printf("and first command is false");
-      }*/
+  c->status = brancher(c->u.command[0]);
+  c->status = brancher(c->u.command[1]);
 }
 
 void
-exec_seq(command_t comm , int init)
+execute_subshell(command_t c)
 {
-  if (init != 5)
-    {fprintf(stderr," exec_seq  put at the wrong place");
-      exit(-1);}
-  execute_command(comm->u.command[0],0);
-  execute_command(comm->u.command[1],0);
-  comm->status=comm->u.command[1]->status;
+	int input_fd;
+	int output_fd;
+	// assign input stream if input file exist 
+	if(c->input != NULL)
+	{
+		// save input file descriptor, for close purpose
+		input_fd = dup(0);
+		int fd = open(c->input, O_RDONLY);
+		if(fd < 0)
+			error(0,1, "invalid input file");
+		dup2(fd, 0);
+		close(fd);
+			
+	}
+	// assign output stream if output file exist
+	if(c->output != NULL)
+	{
+		// save output file descriptor, for close purpose
+		output_fd = dup(1);
+		
+		// assign mode '666' to the output file, create if not exist
+		int fd = open(c->output, O_WRONLY|O_CREAT|O_TRUNC
+				,S_IRUSR|S_IWUSR|S_IWGRP|S_IRGRP|S_IROTH|S_IWOTH);
+		if(fd < 0) {
+			error(0,1, "invalid output file");
+			exit(-1);
+		}
+		dup2(fd, 1);
+		close(fd);
+	}
+	c->status = brancher(c->u.subshell_command);
+  if(c->input != NULL)
+    {
+	  // assign stdin back to main process 
+      dup2(input_fd,STDIN_FILENO);
+      close(input_fd);
+    }
+  if(c->output != NULL)
+    {
+	  // assign stdout back to main process 
+      dup2(output_fd,STDOUT_FILENO);
+      close(output_fd);
+    }
 }
 
 
+/**
+ * execute_pipe_helper
+ *
+ * in: 
+ * 		c(command_t): pipe command that is going to execute
+ *
+ *	
+ * descr:
+ * 		this will be called by brancher
+ *
+ */
 void
-exec_sub(command_t comm, int init)
+execute_pipe_command(command_t c)
 {
-  int re;
-  int filefrom;
-  int filedesc;
-  int stat;
-  int in=0;
-  int out=0;
-  int saved_stdout;
-  int saved_stdin;
-  if (init != 4)
-    {fprintf(stderr," exec_simple put at the wrong place");
-      exit(-1);}
-      if(comm->input) //input
-	{
-	  in=1;
-	  saved_stdin=dup(0);
-	  // printf("%s\n",comm->input); //haha
-	  filefrom = open(comm->input,O_RDONLY);
-	  if(filefrom < 0)
-	    {
-	      fprintf(stderr,"problem with input");
-	      exit(-1);
-	    }
-	  re=dup2(filefrom,STDIN_FILENO);
-	  if(re<0)
-	    {
-	      fprintf(stderr,"can not read from file");
-	      exit(-1);
-	    }
-	  close(filefrom);
+	
+	// create pipe between parent and child
+	int fds[2];
+	pipe(fds);
+	if(pipe(fds) == -1)
+		error(0,1,"pipe error");
+
+	pid_t pid;
+	if((pid = fork()) == -1)
+		  error(0,1,"fork error");
+
+	// child process
+	else if(pid == 0) {
+		close(fds[0]);
+		// redirect stdout
+		dup2(fds[1], 1);
+		close(fds[1]);
+		brancher(c->u.command[0]);
+		// c->status=c->u.command[0]->status;
+		// this can be deleted
+		exit(0);
+
 	}
-      if(comm->output) // has output to a file
-	{
-	  //printf("%s",comm->output);
-	  out=1;
-	  saved_stdout=dup(1);
-	  filedesc = open(comm->output,O_CREAT |O_TRUNC |O_WRONLY,0777);
-	  if(filedesc < 0)
-	    {
-	      fprintf(stderr,"problem with output");
-	      exit(-1);
-	    }
-	  re=dup2(filedesc,STDOUT_FILENO);
-	  if(re<0)
-	    {
-	      fprintf(stderr,"can not write to file");
-	      exit(-1);
-	    }
-	  close(filedesc);
+	else {
+		// waiting for child process exit
+		waitpid(pid, &c->status, 0);
+		dup2(fds[0], 0);
+		// close pipe
+		close(fds[1]);
+		close(fds[0]);
+		
+
+		// execute right 
+      c->status = brancher(c->u.command[1]);
 	}
-  execute_command (comm->u.subshell_command, 0);
-  if(in)
-    {
-      dup2(saved_stdin,0);
-      close(saved_stdin);
-      in =0;
-    }
-  if(out)
-    {
-      dup2(saved_stdout,1);
-      close(saved_stdout);
-      out=0;
-    }
-  comm->status=comm->u.subshell_command->status;
 }
 
-void
-exec_pipe(command_t comm, int init)
-{
-  int re;
-  int filefrom;
-  int filedesc;
-  int stat;
-  int PipeEnd[2];
-  pipe(PipeEnd);
-  pid_t p = fork();
-  if (init != 6)
-    {fprintf(stderr," exec_simple put at the wrong place");
-      exit(-1);}
-  if(p==0) //child run first command as input;
-    {
-      stat=dup2(PipeEnd[1],STDOUT_FILENO);
-      if(stat<0)
-	{
-	  fprintf(stderr,"something wrong with pipe");
-	  exit(-1);
-	}
-      else
-	{
-	  close(PipeEnd[0]);
-	  close(PipeEnd[1]);
-	}
-	execute_command(comm->u.command[0],0);
-	comm->status=comm->u.command[0]->status;
-	exit(0);
-    }
-  else if(p>0)
-    {
-      waitpid(p,&stat,0);
-      comm->status=stat;
-      stat=dup2(PipeEnd[0],STDIN_FILENO);
-      if(stat<0)
-	{
-	  fprintf(stderr,"something wrong with pipe");
-	  exit(-1);
-	}
-      else
-	{
-	  close(PipeEnd[1]);
-	  close(PipeEnd[0]);
-	}
-      execute_command(comm->u.command[1],0);
-      comm->status=comm->u.command[1]->status;
-    }
-  else
-    {
-      fprintf(stderr,"fork has error");
-      exit(-1);
-    }
-      comm->status=comm->u.command[1]->status;
-}
-
-/********************************************************************/
-int
-string_compare(char * a, char * b)
-{
-  return strcmp(a,b);
-}
-
-/*********************************************************************************/
-
-void
-execute_command (command_t c, int time_travel)
-{
-  /* FIXME: Replace this with your implementation.  You may need to                         
-     add auxiliary functions and otherwise modify the source code.                          
-     You can also use external functions defined in the GNU C Library.  */
-  enum command_type Scrtype=c->type;
-  if (Scrtype == SIMPLE_COMMAND )
-    {
-      exec_simple(c, 1);
-    }
-  else if (Scrtype == AND_COMMAND)
-    {
-      exec_and(c, 2);
-    }
-  else if (Scrtype == OR_COMMAND )
-    {
-      exec_or(c,3);
-    }
-  else if (Scrtype == SUBSHELL_COMMAND)
-    {
-      exec_sub(c, 4);
-    }
-  else if (Scrtype == SEQUENCE_COMMAND)
-    {
-      exec_seq(c, 5);
-    }
-  else if (Scrtype == PIPE_COMMAND )
-    {
-      exec_pipe(c,6);
-    }
-  else
-    {
-      fprintf(stderr,"no command like that");
-      exit(-1);
-    }
-}

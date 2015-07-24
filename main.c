@@ -18,6 +18,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+//#define DEBUG_MODE
 //pthread_mutex_t mutex_lock = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct box 
@@ -25,6 +26,8 @@ typedef struct box
 	volatile int n_reading;
 	bool is_wlocked;
 	char* filename;
+	vector* r_holder_list;
+	command_t w_holder;
 	int n;
 
 } box;
@@ -39,8 +42,8 @@ typedef box* box_t;
 
 
 locker create_locker(char** all_files, int n);
-bool release_locks(locker* L, int* r_locker_id, int n, int* w_locker_id, int m);
-bool get_locks(locker* L, int* r_locker_id, int n, int* w_locker_id, int m);
+bool release_locks(command_t cmd, locker* L, int* r_locker_id, int n, int* w_locker_id, int m);
+bool get_locks(command_t cmd, locker* L, int* r_locker_id, int n, int* w_locker_id, int m);
 void print_locker(locker* L);
 
 
@@ -64,96 +67,137 @@ create_locker(char** all_files, int n)
 		L.storage[i]->n = i;
 		L.storage[i]->n_reading = 0;
 		L.storage[i]->is_wlocked = false;
+		L.storage[i]->w_holder = NULL;
+		L.storage[i]->r_holder_list = vector_init();
 	}
 	return L;
 }
 
-#define set_read_lock(L, i,state) L->storage[i]->is_rlocked = state 
 #define set_write_lock(L, i, state) L->storage[i]->is_wlocked = state 
-#define read_lock(L, i) set_read_lock(L, i, true)
 #define write_lock(L, i) set_write_lock(L, i, true)
-#define read_unlock(L, i) set_read_lock(L,i, false) 
 #define write_unlock(L, i) set_write_lock(L,i, false)
 #define RLOCK(L, i) (L->storage[i]->n_reading != 0)
 #define WLOCK(L, i) (L->storage[i]->is_wlocked)
 
+int command_t_cmp(command_t left, command_t right) {
+	return !(left == right);
+}
 bool 
-get_locks(locker* L, int* r_locker_id, int n, int* w_locker_id, int m) {
+get_locks(command_t cmd, locker* L, int* r_locker_id, int n, int* w_locker_id, int m) {
 	
 	int i = 0,j = 0;
-
+	int n_holds = 0;
 	// check reading locks
 	for(i = 0; i < n; i++) {
 		j = r_locker_id[i];
 		// if someone is writing
 		if(RLOCK(L,j) == false && WLOCK(L, j)) 
 		{
-			// unlock 
-			return false;
+			// ignore
+		}
+		else {
+			// add cmd into reading list
+			if(vector_contains(L->storage[j]->r_holder_list, (void*)cmd, (int (*)(void*, void*))command_t_cmp) == -1) {
+				vector_insert(L->storage[j]->r_holder_list, cmd);
+				L->storage[j]->n_reading++;
+			}
+			n_holds++;
+			
 		}
 	}
 
 	// check writing locks
 	for(i = 0; i < m; i++) {
 		j = w_locker_id[i];
-		// if someone is reading or writing return false
-		if(WLOCK(L, j) || RLOCK(L, j)) 
+		// if someone is reading, do not get write lock
+		if(RLOCK(L, j)) 
 		{
-			// unlock
-			return false;
+			if(L->storage[j]->r_holder_list->size == 1 
+					&& vector_contains(L->storage[j]->r_holder_list,
+										cmd, (int (*)(void*, void*))command_t_cmp) != -1){
+
+				if(WLOCK(L,j) == false) {
+					
+					// if write holder is NULL
+					// let current command holds the box
+					L->storage[j]->w_holder = cmd;
+					write_lock(L, j);				
+					n_holds++;
+				}
+				else if(WLOCK(L,j) == true){
+					if(L->storage[j]->w_holder == cmd)
+						n_holds++;
+				}
+
+			}
+
+		}
+		else if(WLOCK(L,j) == false) {
+			
+			// if write holder is NULL
+			// let current command holds the box
+			L->storage[j]->w_holder = cmd;
+			write_lock(L, j);				
+			n_holds++;
+		}
+		else if(WLOCK(L,j) == true){
+			if(L->storage[j]->w_holder == cmd)
+				n_holds++;
 		}
 	}
-
-	// lock reading lock
-	// doesn't allow other people to write
-	// increment number of user that is reading
-	for(i = 0; i < n; i++) {
-		j = r_locker_id[i];
-		L->storage[j]->n_reading++;
+#ifdef DEBUG_MODE
+	printf("unlocked\n");
+	for( i = 0; i < L->n_locks; i++) {
+		printf("%s: %d %d %d\n",  L->storage[i]->filename,L->storage[i]->n_reading, RLOCK(L, i), WLOCK(L, i));
 	}
-
-	// lock writing lock
-	// doesn't allow other to write
-	// people who try to read have to check write lock
-	for(i = 0; i < m ;i++) {
-		j = w_locker_id[i];
-		write_lock(L, j);
-	}
-
-	// unlock
-	return true;
+#endif
+	return (n_holds == (n + m));
 }
 
 bool 
-release_locks(locker* L, int* r_locker_id, int n, int* w_locker_id, int m) {
+release_locks(command_t cmd, locker* L, int* r_locker_id, int n, int* w_locker_id, int m) {
 	// LOCK
 	// pthread_mutex_lock(&mutex_lock);
 	int i = 0, j = 0;
 	// release read locks
 	for(i = 0; i < n; i++) {
 	    j = r_locker_id[i];
+		box* container = L->storage[j];
 
+		int index = vector_contains(container->r_holder_list,(void*)cmd, (int (*)(void*, void*))command_t_cmp);
+		assert(index != -1);
 		// decrement number of people that is reading
-		L->storage[j]->n_reading--;
+		container->n_reading--;
 		
-		assert(L->storage[j]->n_reading >= 0);
+		vector_delete(container->r_holder_list, index);
+
+		assert(container->n_reading >= 0);
 		// if no one is reading, allow other people to write
 		if(RLOCK(L, j) == false)
 			write_unlock(L, j);
+#ifdef DEBUG_MODE
 		else 
 			printf("reading queue: %d\n", L->storage[j] ->n_reading);
+#endif
 
 	}
 	for(i = 0; i < m; i++) {
 		// release write lock
 	    j = w_locker_id[i];
+		box* container = L->storage[j];
+		assert(container->w_holder == cmd);
+		container->w_holder = NULL;
 		write_unlock(L, j);
 
+
 	}
+#ifdef DEBUG_MODE
 	// UNLOCK
+	printf("unlocked\n");
 	for( i = 0; i < L->n_locks; i++) {
-		printf("%s: %d %d\n", L->storage[i]->filename, RLOCK(L, i), WLOCK(L, i));
+		printf("%s: %d %d %d\n",  L->storage[i]->filename,L->storage[i]->n_reading, RLOCK(L, i), WLOCK(L, i));
 	}
+#endif
 	//pthread_mutex_unlock(&mutex_lock);
 	return true;
 }
@@ -196,35 +240,7 @@ execute(void* cmd) {
 
 	// execute command
 	execute_command((command_t)cmd, 1);
-	printf("finished\n");
-	// get mutex lock and release locks in locker
-	// wait if other thread is doing something with locker
-	//release_locks(&LOCKER, cmd_t->in, cmd_t->n_in, cmd_t->out, cmd_t->n_out);
-	// release locks
-	//TODO check if locks are released	
 
-	// create new process and wait to exit
-	/*
-	pid_t pid;	
-	if((pid = fork()) == -1) 
-		error(0,1,"fork error");
-	else if(pid == 0) {
-		execute_command(cmd_t, 0);
-		exit(0);
-	}
-	else {
-		// if pid exited
-		while(wait(&cmd_t->status) != pid)
-			;
-		printf("process exited\n");
-		release_locks(&LOCKER, cmd_t->in, cmd_t->n_in, cmd_t->out, cmd_t->n_out);
-		// waiting to release locks
-		//release_locks(&LOCKER, cmd_t->in, cmd_t->n_in, cmd_t->out, cmd_t->n_out);
-		
-	}
-	
-	printf("exiting\n");
-	*/
 	pthread_exit(0);
 	//return NULL;
 }
@@ -288,14 +304,10 @@ generate_file_indexes(command_t cmd,set* in, set *out, set *set)
 	for(i = 0; i < n; i++) {
 		if(in->fileName[i])
 			inSet[i] = indexOf(set, in->fileName[i]);
-		else
-			printf("i: %d\n", i);
 	}
 	for(i = 0; i < m; i++) {
 		if(out->fileName[i])
 			outSet[i] = indexOf(set, out->fileName[i]);
-		else
-			printf("i: %d\n", i);
 	}
 	cmd->in = inSet;
 	cmd->out = outSet;
@@ -339,8 +351,6 @@ main (int argc, char **argv)
   set S = createFileSet();
   queue* waitingList = queue_init();
 
-  printf("=========================\n");
-  printf("dependency:\n");
   while ((command = read_command_stream (command_stream)))
     {
 		  if (print_tree)
@@ -348,13 +358,13 @@ main (int argc, char **argv)
 		  printf ("# %d\n", command_number++);
 		  print_command (command);
 		}
-		  if(time_travel == false)
+		  if(!time_travel)
 		  {
 			  last_command = command;
-			execute_command(command, 0);
+			  execute_command(command, time_travel);
 		  }
 		  else
-		{
+		 {
 			// insert all command into waiting list
 			queue_enqueue(waitingList, command);		
 			// union a set that includes all files
@@ -364,6 +374,7 @@ main (int argc, char **argv)
 			unionSet(&S, &in);
 			unionSet(&S, &out);
 
+#ifdef BUG_MODE
 			int i = 0;
 			for(i = 0; i < in.size; i++) {
 				printf("in-%s ",  in.fileName[i]);
@@ -372,65 +383,67 @@ main (int argc, char **argv)
 				printf("out-%s ", out.fileName[i]);
 			}
 			printf("\n");
+		
+#endif
 			
 			generate_file_indexes(command, &in, &out, &S);
 		}
     }
-    printf("=========================\n");
 
 	if(time_travel) {
-	// create lockers base on number of file required by all commands
-	LOCKER = create_locker(S.fileName, S.size);
-	
-  // create threads that for join purpose
-  pthread_t threads[waitingList->size];
-  printf("w=%d\n", waitingList->size);
-  int i = 0;
-  	//int n_thread = 0;
-  // stop when all commands are executed
-  while(queue_isempty(waitingList) == false)
-  {
-  	queue* running_queue = queue_init();
-  	int n_thread = 0;
-	  // doesn't allow other thread to exit
-	  // condition 1: n process are finished and release locks, m process are finished and not release locks yet
-	  // 		run process that have dependency with n process, this loop will finally release mutex locks
-	  // 		and wait for other thread to run, and other thread will get the lock and release the locks in locker
-	  // condition 2: all thread are finished but havn't released locks, this should not happen because wait 
-	  // 		function should block current thread until one thread is exit
-	  // condition 3: all thread are finished and release locks, this should run all command that have dependency
-	  // 		on those commands, and get new locks
-	  // condition 4: all commands are finished, queue should finished all commands and queue is empty, exit looping
-	 
-	  // check all command in queue, if it is ready to run, create new threads and execute it, otherwise
-	  // put in queue again
-	  int queue_size = queue_sizeof(waitingList);
-	  for(i = 0; i < queue_size; i++){	
-		// get next command
-		command_t next;
-		next = (command_t)queue_dequeue(waitingList);
-		// this will not asking for locks again because  
-		if(get_locks(&LOCKER, next->in, next->n_in, next->out, next->n_out)) {
-			printf("get lock\n");
-			queue_enqueue(running_queue, next);
-		   pthread_create(&(threads[n_thread++]), NULL, execute, next); 
-		}
-		else {
-			queue_enqueue(waitingList, next);
-		}
-	  }
+		// create lockers base on number of file required by all commands
+		LOCKER = create_locker(S.fileName, S.size);
+		
+	  // create threads that for join purpose
+	  pthread_t threads[waitingList->size];
+
+	  int i = 0;
+		//int n_thread = 0;
+	  // stop when all commands are executed
+	  while(queue_isempty(waitingList) == false)
+	  {
+		queue* running_queue = queue_init();
+		int n_thread = 0;
+		  // doesn't allow other thread to exit
+		  // condition 1: n process are finished and release locks, m process are finished and not release locks yet
+		  // 		run process that have dependency with n process, this loop will finally release mutex locks
+		  // 		and wait for other thread to run, and other thread will get the lock and release the locks in locker
+		  // condition 2: all thread are finished but havn't released locks, this should not happen because wait 
+		  // 		function should block current thread until one thread is exit
+		  // condition 3: all thread are finished and release locks, this should run all command that have dependency
+		  // 		on those commands, and get new locks
+		  // condition 4: all commands are finished, queue should finished all commands and queue is empty, exit looping
+		 
+		  // check all command in queue, if it is ready to run, create new threads and execute it, otherwise
+		  // put in queue again
+		  int queue_size = queue_sizeof(waitingList);
+		  for(i = 0; i < queue_size; i++){	
+			// get next command
+			command_t next;
+			next = (command_t)queue_dequeue(waitingList);
+			// this will not asking for locks again because  
+			if(get_locks(next, &LOCKER, next->in, next->n_in, next->out, next->n_out)) {
+				queue_enqueue(running_queue, next);
+			   pthread_create(&(threads[n_thread++]), NULL, execute, next); 
+			}
+			else {
+				queue_enqueue(waitingList, next);
+			}
+		  }
 
 
-	  for(i = 0; i < n_thread; i++) {
-		int ret = pthread_join(threads[i], NULL);
-		printf("ret = %d", ret);
-	  }
+		  for(i = 0; i < n_thread; i++) {
+			int ret = pthread_join(threads[i], NULL);
+#ifdef DEBUG_MODE
+			printf("ret = %d\n", ret);
+#endif
+		  }
 
-	  while(queue_isempty(running_queue) == false) {
-		command_t next;
-		next = (command_t)queue_dequeue(running_queue);
-		release_locks(&LOCKER, next->in, next->n_in, next->out, next->n_out);
-	  }
+		  while(queue_isempty(running_queue) == false) {
+			command_t next;
+			next = (command_t)queue_dequeue(running_queue);
+			release_locks(next, &LOCKER, next->in, next->n_in, next->out, next->n_out);
+		  }
   }
 }
   return print_tree || !last_command ? 0 : command_status (last_command);

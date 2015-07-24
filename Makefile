@@ -12,11 +12,11 @@ TEST_BASES = $(subst .sh,,$(TESTS))
 
 TIMETRASH_SOURCES = \
   alloc.c \
-  execute-command_temp.c \
   main.c \
   read-command.c \
   print-command.c \
-  set.c 
+  set.c \
+  execute-command.c
 TIMETRASH_OBJECTS = $(subst .c,.o,$(TIMETRASH_SOURCES))
 
 DIST_SOURCES = \

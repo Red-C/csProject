@@ -88,4 +88,15 @@ void vector_free(vector* v)
 	free(v->array);
 	free(v);
 }
+int vector_contains(vector* v, void* item, int (*cmp)(void*, void*))
+{
+	int i = 0;
+	for(i = 0; i<v->size; i++) {
+		if(cmp(v->array[i],item) == 0)
+			return i;
+	}
+	return -1;
+
+
+}
 #endif
