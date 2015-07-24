@@ -1,7 +1,3 @@
-echo a b; 
-echo a c;
-echo c d;
-echo a b c d > c && echo a b c d;
-
-
-
+echo a > a && echo a
+tr a A < a && echo b
+echo c > b && echo c

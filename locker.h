@@ -7,6 +7,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include "vector.h"
+//#define DEBUG_MODE
 
 extern pthread_mutex_t mutex_lock;
 

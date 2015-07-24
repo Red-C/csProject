@@ -1,4 +1,5 @@
 // UCLA CS 111 Lab 1 main program
+// Hongbo Li & Hongfei Li
 #define _GNU_SOURCE
 #include <errno.h>
 #include <error.h>
@@ -18,7 +19,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-//#define DEBUG_MODE
+#define DEBUG_MODE
 
 
 

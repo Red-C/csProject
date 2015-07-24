@@ -44,11 +44,12 @@ get_locks(void* cmd, locker* L, int* r_locker_id, int n,
 	for(i = 0; i < n; i++) {
 		j = r_locker_id[i];
 		// if someone is writing
-		if(RLOCK(L,j) == false && WLOCK(L, j)) 
+		if(WLOCK(L, j)) 
 		{
 			// ignore
 		}
 		else {
+			// R = T && W = T 
 			// add cmd into reading list
 			if(vector_contains(L->storage[j]->r_holder_list, cmd, cmp) == -1) {
 				vector_insert(L->storage[j]->r_holder_list, cmd);
