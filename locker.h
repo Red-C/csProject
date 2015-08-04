@@ -9,8 +9,8 @@
 #include "vector.h"
 //#define DEBUG_MODE
 
-extern pthread_mutex_t mutex_lock;
 
+static pthread_mutex_t mutex_lock = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct box 
 {
@@ -27,6 +27,10 @@ typedef struct locker
 {
 	box** storage;
 	int n_locks;
+	pthread_mutex_t mutex_lock;
+	int hasChanged;
+	int current_holder;
+	
 } locker;
 
 typedef box* box_t;

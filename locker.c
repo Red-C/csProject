@@ -5,7 +5,6 @@
 #define RLOCK(L, i) (L->storage[i]->n_reading != 0)
 #define WLOCK(L, i) (L->storage[i]->is_wlocked)
 
-pthread_mutex_t mutex_lock = PTHREAD_MUTEX_INITIALIZER;
 
 locker
 create_locker(char** all_files, int n)
@@ -29,6 +28,7 @@ create_locker(char** all_files, int n)
 		L.storage[i]->w_holder = NULL;
 		L.storage[i]->r_holder_list = vector_init();
 	}
+	L.current_holder = 0;
 	return L;
 }
 
@@ -105,7 +105,12 @@ get_locks(void* cmd, locker* L, int* r_locker_id, int n,
 		printf("%s: %d %d %d\n",  L->storage[i]->filename,L->storage[i]->n_reading, RLOCK(L, i), WLOCK(L, i));
 	}
 #endif
-	return (n_holds == (n + m));
+	if(n_holds == (n+m)) {
+		L->current_holder++;
+		return true;
+	}
+
+	return false;
 }
 
 bool 
@@ -156,6 +161,7 @@ release_locks(void* cmd, locker* L,
 	}
 #endif
 	//pthread_mutex_unlock(&mutex_lock);
+	L->current_holder--;
 	return true;
 }
 

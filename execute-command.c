@@ -22,8 +22,9 @@ int brancher(command_t c);
 void execute_command(command_t c, int time_travel) {
 	if(time_travel == 0)
 		brancher(c);
-	else
+	else {
 		brancher(c);
+	}
 }
 int
 command_status (command_t c)

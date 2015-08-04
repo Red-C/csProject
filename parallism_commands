@@ -1,3 +1,4 @@
-echo a > a && echo a
-tr a A < a && echo b
-echo c > b && echo c
+echo a > a && echo aa
+tr a A < a > a && echo bb
+echo c > b && echo cc
+
