@@ -136,14 +136,16 @@ main (int argc, char **argv)
   int print_tree = 0;
   int time_travel = 0;
   int limit_parallel = 0;
-  int N = 0; 
+  int demo_mode = 0;
+  int N = -1; 
   program_name = argv[0];
   for (;;)
-    switch (getopt (argc, argv, "ptN"))
+    switch (getopt (argc, argv, "ptNd"))
       {
       case 'p': print_tree = 1; break;
       case 't': time_travel = 1; break;
 	  case 'N': limit_parallel = 1;  break;
+	  case 'd': demo_mode = 1; break;
       default: usage (); break;
       case -1: goto options_exhausted;
       }
@@ -162,6 +164,8 @@ main (int argc, char **argv)
 				usage();
 				return 1;
 			}
+			if( N <= 0)
+				error(1, errno, "N must > 0");
 
 			optind++;
 	  		}
@@ -188,6 +192,7 @@ main (int argc, char **argv)
     {
 		  if (print_tree)
 		{
+			
 		  printf ("# %d\n", command_number++);
 		  print_command (command);
 		}
@@ -242,16 +247,17 @@ main (int argc, char **argv)
 		  pthread_mutex_lock(&mutex_lock);
 		  int queue_size = queue_sizeof(waitingList);
 		  for(i = 0; i < queue_size; i++){	
+			if(limit_parallel && LOCKER.current_holder >= N)
+				break;
 			// get next command
 			command_t next;
 			next = (command_t)queue_dequeue(waitingList);
 			// this will not asking for locks again because  
-			if(LOCKER.current_holder >= N)
-				break;
 			if(get_locks(next, &LOCKER, next->in, next->n_in, 
 								next->out, next->n_out,
 								(int (*)(void*, void*))command_t_cmp)) {
-				printf("current_lock_holder: %d\n", LOCKER.current_holder);
+				if(demo_mode)
+					printf("command #%d got locks and about to run;  current_lock_holder: %d\n", n_thread, LOCKER.current_holder);
 
 			   pthread_create(&(threads[n_thread++]), NULL, execute, next); 
 			}
